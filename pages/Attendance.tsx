@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -97,15 +96,15 @@ export const Attendance: React.FC = () => {
       {/* Grid */}
       <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
         <div className="overflow-auto custom-scrollbar flex-1 relative">
-            <table className="w-full text-sm border-collapse">
+            <table className="w-full text-sm border-collapse table-fixed">
                 <thead className="bg-slate-50 text-slate-500 sticky top-0 z-20 shadow-sm">
                     <tr>
-                        <th className="sticky left-0 z-30 bg-slate-50 px-4 py-3 border-b border-r border-slate-200 min-w-[120px] text-left">姓名</th>
-                        <th className="sticky left-[120px] z-30 bg-slate-50 px-4 py-3 border-b border-r border-slate-200 w-[80px] text-center font-bold text-slate-700 shadow-xl">合计</th>
+                        <th className="sticky left-0 z-30 bg-slate-50 px-4 py-3 border-b border-r border-slate-200 w-[120px] text-left">姓名</th>
+                        <th className="sticky left-[120px] z-30 bg-slate-50 px-4 py-3 border-b border-r-2 border-slate-300 w-[80px] text-center font-bold text-slate-700 shadow-sm">合计</th>
                         {daysArray.map(d => (
                             <th 
                                 key={d} 
-                                className={`px-1 py-3 border-b border-slate-200 min-w-[48px] text-center font-medium ${isSunday(d) ? 'bg-rose-100 text-rose-600 font-bold' : isWeekend(d) ? 'bg-slate-100 text-slate-500' : ''}`}
+                                className={`px-1 py-3 border-b border-slate-200 w-12 min-w-[3rem] text-center font-medium ${isSunday(d) ? 'bg-rose-100 text-rose-600 font-bold' : isWeekend(d) ? 'bg-slate-100 text-slate-500' : ''}`}
                             >
                                 <div className="flex flex-col items-center">
                                     <span>{d}</span>
@@ -119,11 +118,11 @@ export const Attendance: React.FC = () => {
                     {currentData.records.map(emp => (
                         <tr key={emp.employeeId} className="hover:bg-slate-50 group">
                             {/* Sticky Name Col */}
-                            <td className="sticky left-0 z-10 bg-white group-hover:bg-slate-50 px-4 py-2 border-r border-b border-slate-100 font-medium text-slate-700 whitespace-nowrap">
+                            <td className="sticky left-0 z-10 bg-white group-hover:bg-slate-50 px-4 py-2 border-r border-b border-slate-100 font-medium text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis w-[120px]">
                                 {emp.employeeName}
                             </td>
                              {/* Sticky Total Col */}
-                            <td className="sticky left-[120px] z-10 bg-blue-50/50 group-hover:bg-blue-100/50 px-2 py-2 border-r border-b border-slate-100 text-center font-bold text-accent">
+                            <td className="sticky left-[120px] z-10 bg-blue-50/50 group-hover:bg-blue-100/50 px-2 py-2 border-r-2 border-b border-slate-300 text-center font-bold text-accent w-[80px]">
                                 {emp.workHours || 0}
                             </td>
                             {/* Daily Cells */}

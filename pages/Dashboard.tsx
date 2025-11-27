@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useData } from '../contexts/DataContext';
 import { calculateSalary } from '../services/calcService';
@@ -55,25 +54,28 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Main Chart */}
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-[400px]">
+      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <h3 className="text-lg font-bold text-slate-800 mb-6">员工薪资构成分布 (基础分 + 奖金)</h3>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={chartData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-            <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-            <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `¥${value}`} />
-            <Tooltip 
-              cursor={{fill: '#f1f5f9'}}
-              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-              formatter={(val: number) => [`¥${val}`, '']}
-            />
-            <Bar dataKey="base" stackId="a" fill="#94a3b8" name="实得基础分" radius={[0, 0, 4, 4]} />
-            <Bar dataKey="bonus" stackId="a" fill="#0ea5e9" name="分红奖金" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        {/* Explicit height container to fix Recharts resize warning */}
+        <div style={{ width: '100%', height: 400, minHeight: 400 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `¥${value}`} />
+              <Tooltip 
+                cursor={{fill: '#f1f5f9'}}
+                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                formatter={(val: number) => [`¥${val}`, '']}
+              />
+              <Bar dataKey="base" stackId="a" fill="#94a3b8" name="实得基础分" radius={[0, 0, 4, 4]} />
+              <Bar dataKey="bonus" stackId="a" fill="#0ea5e9" name="分红奖金" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
