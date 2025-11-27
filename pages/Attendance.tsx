@@ -30,6 +30,10 @@ export const Attendance: React.FC = () => {
     return dayOfWeek === 0 || dayOfWeek === 6;
   };
 
+  const isSunday = (d: number) => {
+      return new Date(currentDate.year, currentDate.month - 1, d).getDay() === 0;
+  };
+
   const handleAutoFill = () => {
       if (confirm('确定要使用智能填充吗？\n\n- 将根据员工设定的“每日标准工时”填充所有空白。\n- 周日将自动留空。\n- 现有数据将被覆盖。')) {
           autoFillAttendance();
@@ -43,7 +47,7 @@ export const Attendance: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <CalendarDays className="text-accent" /> 每日工时记录
           </h1>
-          <p className="text-slate-500">工段长/行政专用：记录每日员工出勤工时</p>
+          <p className="text-slate-500">工段长/行政专用：记录每日员工出勤工时 (精确到0.5小时)</p>
         </div>
 
         {/* Controls */}
@@ -101,7 +105,7 @@ export const Attendance: React.FC = () => {
                         {daysArray.map(d => (
                             <th 
                                 key={d} 
-                                className={`px-1 py-3 border-b border-slate-200 min-w-[48px] text-center font-medium ${isWeekend(d) ? 'bg-slate-100 text-slate-400' : ''}`}
+                                className={`px-1 py-3 border-b border-slate-200 min-w-[48px] text-center font-medium ${isSunday(d) ? 'bg-rose-100 text-rose-600 font-bold' : isWeekend(d) ? 'bg-slate-100 text-slate-500' : ''}`}
                             >
                                 <div className="flex flex-col items-center">
                                     <span>{d}</span>
@@ -113,7 +117,7 @@ export const Attendance: React.FC = () => {
                 </thead>
                 <tbody>
                     {currentData.records.map(emp => (
-                        <tr key={emp.employeeId} className="hover:bg-slate-50">
+                        <tr key={emp.employeeId} className="hover:bg-slate-50 group">
                             {/* Sticky Name Col */}
                             <td className="sticky left-0 z-10 bg-white group-hover:bg-slate-50 px-4 py-2 border-r border-b border-slate-100 font-medium text-slate-700 whitespace-nowrap">
                                 {emp.employeeName}
@@ -125,19 +129,21 @@ export const Attendance: React.FC = () => {
                             {/* Daily Cells */}
                             {daysArray.map(d => {
                                 const val = emp.dailyLogs?.[d] ?? '';
+                                const isSun = isSunday(d);
                                 const isWk = isWeekend(d);
                                 return (
-                                    <td key={d} className={`border-b border-slate-100 p-0 ${isWk ? 'bg-slate-50/50' : ''}`}>
+                                    <td key={d} className={`border-b border-slate-100 p-0 ${isSun ? 'bg-rose-50/50' : isWk ? 'bg-slate-50/50' : ''}`}>
                                         <input 
                                             type="number"
+                                            step="0.5" 
                                             disabled={!canEdit}
                                             value={val}
                                             onChange={(e) => {
                                                 const v = e.target.value === '' ? 0 : parseFloat(e.target.value);
                                                 updateDailyLog(emp.employeeId, d, v);
                                             }}
-                                            className={`w-full h-10 text-center bg-transparent focus:bg-blue-50 focus:outline-none transition-colors ${val ? 'text-slate-800 font-medium' : 'text-slate-300'}`}
-                                            placeholder="-"
+                                            className={`w-full h-10 text-center bg-transparent focus:bg-blue-100 focus:text-blue-700 focus:font-bold focus:outline-none transition-colors ${val ? 'text-slate-800 font-medium' : 'text-slate-300'}`}
+                                            placeholder={isSun ? '' : '-'}
                                         />
                                     </td>
                                 );

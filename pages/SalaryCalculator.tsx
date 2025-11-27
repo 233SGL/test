@@ -148,6 +148,7 @@ export const SalaryCalculator: React.FC = () => {
                             <td className="px-2 py-2 text-center">
                                 <input 
                                     type="number"
+                                    step="0.5"
                                     disabled={!canEditHours}
                                     className="w-full text-center bg-transparent border-b border-transparent hover:border-slate-300 focus:border-accent focus:outline-none transition-colors disabled:text-slate-500"
                                     value={record.workHours}

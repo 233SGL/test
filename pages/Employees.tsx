@@ -351,13 +351,13 @@ export const Employees: React.FC = () => {
                                 <div className="flex items-center gap-2">
                                     <Clock size={20} className="text-slate-400"/>
                                     <input 
-                                        type="number" min="0" max="24"
+                                        type="number" min="0" max="24" step="0.5"
                                         className="w-full text-lg font-bold border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-slate-700"
-                                        value={formData.expectedDailyHours} onChange={e => setFormData({...formData, expectedDailyHours: parseInt(e.target.value) || 0})}
+                                        value={formData.expectedDailyHours} onChange={e => setFormData({...formData, expectedDailyHours: parseFloat(e.target.value) || 0})}
                                     />
                                     <span className="text-slate-400 text-sm whitespace-nowrap">小时</span>
                                 </div>
-                                <div className="text-xs text-slate-500 mt-2">用于智能填充</div>
+                                <div className="text-xs text-slate-500 mt-2">用于智能填充（支持0.5小数）</div>
                             </div>
                         </div>
                     </div>
