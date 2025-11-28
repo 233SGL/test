@@ -127,7 +127,10 @@ export const Attendance: React.FC = () => {
                             </td>
                             {/* Daily Cells */}
                             {daysArray.map(d => {
-                                const val = emp.dailyLogs?.[d] ?? '';
+                                // IMPORTANT: Use empty string for 0 to avoid leading zero issue
+                                const rawVal = emp.dailyLogs?.[d];
+                                const displayVal = (rawVal === 0 || rawVal === undefined) ? '' : rawVal;
+                                
                                 const isSun = isSunday(d);
                                 const isWk = isWeekend(d);
                                 return (
@@ -136,12 +139,12 @@ export const Attendance: React.FC = () => {
                                             type="number"
                                             step="0.5" 
                                             disabled={!canEdit}
-                                            value={val}
+                                            value={displayVal}
                                             onChange={(e) => {
                                                 const v = e.target.value === '' ? 0 : parseFloat(e.target.value);
                                                 updateDailyLog(emp.employeeId, d, v);
                                             }}
-                                            className={`w-full h-10 text-center bg-transparent focus:bg-blue-100 focus:text-blue-700 focus:font-bold focus:outline-none transition-colors ${val ? 'text-slate-800 font-medium' : 'text-slate-300'}`}
+                                            className={`w-full h-10 text-center bg-transparent focus:bg-blue-100 focus:text-blue-700 focus:font-bold focus:outline-none transition-colors ${displayVal ? 'text-slate-800 font-medium' : 'text-slate-300'}`}
                                             placeholder={isSun ? '' : '-'}
                                         />
                                     </td>
