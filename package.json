@@ -1,5 +1,6 @@
 {
-  "name": "heshan-payroll-pro",
+  "name": "heshan-payroll",
+  "description": "鹤山定型工段薪酬管理系统前端（React + Vite + Tailwind）",
   "private": true,
   "version": "0.0.0",
   "type": "module",

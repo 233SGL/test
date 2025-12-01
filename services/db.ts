@@ -67,7 +67,7 @@ const INITIAL_USERS: SystemUser[] = [
 ];
 
 const DEFAULT_SETTINGS: GlobalSettings = {
-    announcement: "安全生产，重在预防。进入车间请务必穿戴好劳保用品。本月产量冲刺目标：45,000米。"
+    announcement: "安全生产，重在预防。进入车间请务必穿戴好劳保用品。本月产量冲刺目标：20000m²。"
 };
 
 export class DatabaseService {

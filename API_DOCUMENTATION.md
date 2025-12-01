@@ -1,6 +1,6 @@
 # 和山薪酬管理系统 API 文档
 
-**版本**: 1.0  
+**版本**: 1.1  
 **更新日期**: 2025年12月1日  
 
 ---
@@ -20,6 +20,8 @@
 ## 概述
 
 和山薪酬管理系统是一个基于 React + TypeScript 开发的工资计算与管理系统，使用 localStorage 作为数据持久化方案。系统实现了基于角色的权限控制（RBAC），支持多用户、多部门的薪酬核算。
+
+重要变更：从 v1.1 起，应用不再持久化登录状态，刷新或重新打开页面需要重新登录（会话级登录）。
 
 ### 核心功能模块
 
@@ -51,11 +53,20 @@ enum UserRole {
 ```typescript
 type Permission = 
   | 'EDIT_YIELD'        // 录入产量
-  | 'EDIT_MONEY'        // 定薪权
+  | 'EDIT_UNIT_PRICE'   // 单价维护
   | 'EDIT_HOURS'        // 工时管理
   | 'EDIT_BASE_SCORE'   // 评定基础分
   | 'EDIT_WEIGHTS'      // 权重调节
+  | 'EDIT_FIXED_PACK'   // 固定包维护（出勤/KPI）
+  | 'APPLY_SIMULATION'  // 运行薪酬模拟
   | 'VIEW_SENSITIVE'    // 查看敏感薪资
+  | 'VIEW_DASHBOARD'    // 查看数据大盘
+  | 'VIEW_PRODUCTION'   // 查看/录入生产
+  | 'VIEW_ATTENDANCE'   // 查看/录入工时
+  | 'VIEW_CALCULATOR'   // 查看薪酬计算器
+  | 'VIEW_SIMULATION'   // 查看薪酬模拟
+  | 'VIEW_EMPLOYEES'    // 查看员工档案
+  | 'MANAGE_ANNOUNCEMENTS' // 公告管理
   | 'MANAGE_EMPLOYEES'  // 员工档案管理
   | 'MANAGE_SYSTEM'     // 系统设置管理
 ```
@@ -68,10 +79,10 @@ interface SystemUser {
   username: string;
   displayName: string;
   role: UserRole;
-  customRoleName?: string;
   permissions: Permission[];
   pinCode: string;           // PIN码登录
-  avatar?: string;
+  scopes: string[];          // 可访问工段范围，如 ['styling'] | ['all']
+  avatar?: string;           // 头像（可选）
   isSystem?: boolean;        // 是否为系统预置用户
 }
 ```
@@ -83,7 +94,8 @@ interface Employee {
   id: string;
   name: string;
   gender: 'male' | 'female';
-  department: string;
+  workshopId: string;        // 归属工段ID
+  department: string;        // 归属部门/车间
   position: string;
   joinDate: string;
   phone?: string;
@@ -162,6 +174,8 @@ interface CalculationResult {
 
 单例模式的数据库服务类，基于 localStorage 实现。
 
+存储前缀：`heshan_db_v9`
+
 #### 实例获取
 
 ```typescript
@@ -176,8 +190,26 @@ static getInstance(): DatabaseService
 async connect(): Promise<boolean>
 ```
 
-**功能**: 初始化数据库连接，创建默认数据（员工、用户、设置）  
+**功能**: 初始化数据库连接，创建默认数据（工段、员工、用户、设置）  
 **返回**: `true` 表示连接成功
+#### 工段管理（Workshop）
+
+##### 获取工段列表
+
+```typescript
+async getWorkshops(): Promise<Workshop[]>
+```
+
+**返回**: 工段数组（包含工段名称、代码、部门列表）
+
+##### 保存工段列表
+
+```typescript
+async saveWorkshops(workshops: Workshop[]): Promise<void>
+```
+
+**参数**:
+- `workshops`: 工段数组
 
 #### 设置管理
 
@@ -270,7 +302,7 @@ async saveMonthlyData(data: MonthlyData): Promise<void>
 **参数**:
 - `data`: 月度数据对象
 
-**存储键**: `heshan_db_v5_data_{year}_{month}`
+**存储键**: `heshan_db_v9_data_{year}_{month}`
 
 #### 数据统计与维护
 
@@ -418,10 +450,12 @@ interface AuthContextType {
     name: string;
     avatar: string;
     permissions: Permission[];
+    scopes: string[];                // 会话内可访问范围
     role?: UserRole;
   } | null;
   logout: () => void;                // 登出
   hasPermission: (perm: Permission) => boolean; // 权限检查
+  hasScope: (scope: string) => boolean;         // 范围检查（如 'styling'）
   login: (user: SystemUser) => void; // 登录
 }
 ```
@@ -439,7 +473,7 @@ login(user: SystemUser): void
 **参数**:
 - `user`: 系统用户对象
 
-**副作用**: 更新 localStorage 中的用户信息
+**副作用**: 会话内更新用户信息（不再持久化到 localStorage）
 
 #### logout()
 
@@ -449,7 +483,7 @@ logout(): void
 
 **功能**: 用户登出，清除会话
 
-**副作用**: 清除 localStorage，重置为访客角色
+**副作用**: 重置会话为访客角色（不涉及 localStorage）
 
 #### hasPermission()
 
@@ -873,12 +907,13 @@ function EmployeeManagementPage() {
 
 | 键名 | 说明 |
 |------|------|
-| `heshan_db_v5_employees` | 员工列表 |
-| `heshan_db_v5_users` | 系统用户列表 |
-| `heshan_db_v5_settings` | 全局设置 |
-| `heshan_db_v5_data_{YYYY}_{MM}` | 指定月份的数据 |
-| `app_role` | 当前登录用户的角色 |
-| `app_user_obj` | 当前登录用户的信息 |
+| `heshan_db_v9_workshops` | 工段列表 |
+| `heshan_db_v9_employees` | 员工列表 |
+| `heshan_db_v9_users` | 系统用户列表 |
+| `heshan_db_v9_settings` | 全局设置 |
+| `heshan_db_v9_data_{YYYY}_{MM}` | 指定月份的数据 |
+
+说明：v1.1 起取消了 `app_role` 与 `app_user_obj` 的登录持久化键。
 
 ### 性能优化建议
 
