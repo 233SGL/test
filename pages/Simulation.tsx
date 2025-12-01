@@ -35,6 +35,7 @@ export const Simulation: React.FC = () => {
   const [isCarouselActive, setIsCarouselActive] = useState(false);
   const [slideIndex, setSlideIndex] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [preloadedSlides] = useState([0, 1, 2]); // Preload indicator
 
   // Permissions
   const canView = hasPermission('VIEW_SIMULATION');
@@ -47,11 +48,28 @@ export const Simulation: React.FC = () => {
     }
   }, [currentData]);
 
-  // Clock Timer
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+    // Clock Timer (update once per minute, no per-second flicker)
+    useEffect(() => {
+        const updateTime = () => {
+            const now = new Date();
+            now.setSeconds(0, 0);
+            setCurrentTime(now);
+        };
+
+        updateTime();
+
+        const msUntilNextMinute = 60000 - (Date.now() % 60000);
+        let interval: ReturnType<typeof setInterval> | null = null;
+        const timeout = setTimeout(() => {
+            updateTime();
+            interval = setInterval(updateTime, 60000);
+        }, msUntilNextMinute);
+
+        return () => {
+            clearTimeout(timeout);
+            if (interval) clearInterval(interval);
+        };
+    }, []);
 
   // Carousel Timer
   useEffect(() => {
@@ -160,8 +178,8 @@ export const Simulation: React.FC = () => {
   })).sort((a, b) => b.Total - a.Total);
 
   const pieData = [
-      { name: '基础分支出', value: Math.round(result.totalBasePayout), color: '#64748b' }, // slate-500
-      { name: '修正积分池支出', value: Math.round(result.bonusPool), color: '#3b82f6' } // blue-500
+      { name: '基础分支出', value: Math.round(result.totalBasePayout), color: '#64748b' },
+      { name: '修正积分池支出', value: Math.round(result.bonusPool), color: '#3b82f6' }
   ];
 
   const SimulationControls = () => (
@@ -284,8 +302,8 @@ export const Simulation: React.FC = () => {
           <h2 className="text-5xl font-bold text-blue-200 mb-10 text-center flex items-center justify-center gap-4">
               <TrendingUp className="text-red-400" size={48} /> 薪酬排行榜 TOP 10
           </h2>
-                    <div className="flex-1 w-full max-w-7xl mx-auto bg-slate-800/60 backdrop-blur-md rounded-3xl shadow-2xl p-10 border border-slate-600/50 h-[600px]">
-            <ResponsiveContainer width="100%" height="100%">
+                    <div className="flex-1 w-full max-w-7xl mx-auto bg-slate-800/60 backdrop-blur-md rounded-3xl shadow-2xl p-10 border border-slate-600/50" style={{height: 600}}>
+            <ResponsiveContainer width="100%" height={600}>
                 <BarChart data={chartData.slice(0, 10)} layout="vertical" margin={{ top: 10, right: 80, left: 80, bottom: 10 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#475569" />
                     <XAxis type="number" stroke="#94a3b8" hide />
@@ -311,7 +329,7 @@ export const Simulation: React.FC = () => {
 
   const renderCustomPieLabel = ({ cx, cy, midAngle, outerRadius, value, name, percent }: any) => {
     const RADIAN = Math.PI / 180;
-    const radius = outerRadius + 40; 
+    const radius = outerRadius + 50; 
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
@@ -322,9 +340,9 @@ export const Simulation: React.FC = () => {
             fill="#93c5fd"
             textAnchor={x > cx ? 'start' : 'end'} 
             dominantBaseline="central"
-            className="text-xl font-bold"
+            className="text-2xl font-bold"
         >
-            {`${name}: ¥${Math.round(value).toLocaleString()} (${(percent * 100).toFixed(0)}%)`}
+            {`${name} ${(percent * 100).toFixed(0)}%`}
         </text>
     );
   };
@@ -335,8 +353,8 @@ export const Simulation: React.FC = () => {
               <PieChartIcon size={48} className="text-blue-400"/> 资金分配结构分析
           </h2>
           <div className="flex-1 flex items-center justify-center gap-20">
-              <div className="w-1/2 h-[600px]">
-                  <ResponsiveContainer width="100%" height="100%">
+              <div className="w-1/2" style={{height: 600}}>
+                  <ResponsiveContainer width="100%" height={600}>
                       <PieChart>
                           <Pie
                             data={pieData}
@@ -425,9 +443,9 @@ export const Simulation: React.FC = () => {
             <SimulationControls />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-[400px]">
+                <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm" style={{height: 400}}>
                     <h3 className="font-bold text-slate-700 mb-4">模拟结果预览</h3>
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height={350}>
                         <BarChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
                             <XAxis dataKey="name" />
@@ -499,7 +517,7 @@ export const Simulation: React.FC = () => {
                 <div className="text-right flex flex-col items-end">
                     <div className="text-5xl font-mono font-bold tracking-widest text-white drop-shadow-lg flex items-center gap-3">
                         <Clock size={40} className="text-blue-500" />
-                        {currentTime.toLocaleTimeString([], {hour12: false})}
+                        {currentTime.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' })}
                     </div>
                     <div className="text-slate-400 font-medium text-xl mt-1 flex items-center gap-2">
                         <Calendar size={18} />
@@ -531,9 +549,24 @@ export const Simulation: React.FC = () => {
                {/* Background Elements */}
                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/20 via-slate-900 to-slate-900 -z-10"></div>
 
-              {slideIndex === 0 && <SlideOverview />}
-              {slideIndex === 1 && <SlideLeaderboard />}
-              {slideIndex === 2 && <SlideDistribution />}
+              <div 
+                className={`absolute inset-0 transition-all duration-1000 ease-in-out ${slideIndex === 0 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
+                style={{ willChange: 'opacity' }}
+              >
+                <SlideOverview />
+              </div>
+              <div 
+                className={`absolute inset-0 transition-all duration-1000 ease-in-out ${slideIndex === 1 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
+                style={{ willChange: 'opacity' }}
+              >
+                <SlideLeaderboard />
+              </div>
+              <div 
+                className={`absolute inset-0 transition-all duration-1000 ease-in-out ${slideIndex === 2 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
+                style={{ willChange: 'opacity' }}
+              >
+                <SlideDistribution />
+              </div>
           </div>
 
           {/* Scrolling Ticker Footer */}

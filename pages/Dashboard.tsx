@@ -56,9 +56,8 @@ export const Dashboard: React.FC = () => {
       {/* Main Chart */}
       <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <h3 className="text-lg font-bold text-slate-800 mb-6">员工薪资构成分布 (基础分 + 修正积分)</h3>
-        {/* Explicit height container to fix Recharts resize warning */}
-        <div style={{ width: '100%', height: 400, minHeight: 400 }}>
-          <ResponsiveContainer width="100%" height="100%">
+        <div style={{ width: '100%', height: 400 }}>
+          <ResponsiveContainer width="100%" height={400}>
             <BarChart
               data={chartData}
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
@@ -70,9 +69,10 @@ export const Dashboard: React.FC = () => {
                 cursor={{fill: '#f1f5f9'}}
                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 formatter={(val: number) => [`¥${val}`, '']}
+                animationDuration={0}
               />
-              <Bar dataKey="base" stackId="a" fill="#94a3b8" name="实得基础分" radius={[0, 0, 4, 4]} />
-              <Bar dataKey="bonus" stackId="a" fill="#0ea5e9" name="修正积分" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="base" stackId="a" fill="#94a3b8" name="实得基础分" radius={[0, 0, 4, 4]} isAnimationActive={false} />
+              <Bar dataKey="bonus" stackId="a" fill="#0ea5e9" name="修正积分" radius={[4, 4, 0, 0]} isAnimationActive={false} />
             </BarChart>
           </ResponsiveContainer>
         </div>
