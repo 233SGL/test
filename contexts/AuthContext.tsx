@@ -25,23 +25,11 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Initialize from LocalStorage synchronously
-  const [role, setRoleState] = useState<UserRole>(() => {
-    const saved = localStorage.getItem('app_role');
-    return (saved as UserRole) || UserRole.GUEST;
-  });
+  // Always start as GUEST - require login on every app load
+  const [role, setRoleState] = useState<UserRole>(UserRole.GUEST);
 
-  const [user, setUser] = useState<{ name: string; avatar: string; permissions: Permission[]; scopes: string[] } | null>(() => {
-    const savedUserStr = localStorage.getItem('app_user_obj');
-    if (savedUserStr) {
-        try {
-            return JSON.parse(savedUserStr);
-        } catch (e) {
-            return null;
-        }
-    }
-    return null;
-  });
+  // Always start with no user - require login on every app load
+  const [user, setUser] = useState<{ name: string; avatar: string; permissions: Permission[]; scopes: string[] } | null>(null);
 
   const loginUser = (systemUser: SystemUser) => {
     setRoleState(systemUser.role);
@@ -53,28 +41,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         scopes: systemUser.scopes || []
     };
     setUser(userObj);
-    localStorage.setItem('app_role', systemUser.role);
-    localStorage.setItem('app_user_obj', JSON.stringify(userObj));
+    // No longer persist to localStorage - session only
   };
 
   const logout = () => {
     setRoleState(UserRole.GUEST);
-    localStorage.removeItem('app_role');
-    localStorage.removeItem('app_user_obj');
     setUser(null);
   };
 
   const hasPermission = (perm: Permission): boolean => {
       if (!user) return false;
-      if (user.permissions.includes(perm)) return true;
+      if (user.permissions && user.permissions.includes(perm)) return true;
       if (role === UserRole.ADMIN) return true;
       return false;
   };
 
   const hasScope = (scope: string): boolean => {
       if (!user) return false;
-      if (user.scopes.includes('all')) return true;
-      return user.scopes.includes(scope);
+      if (user.scopes && user.scopes.includes('all')) return true;
+      return user.scopes && user.scopes.includes(scope);
   };
 
   return (
