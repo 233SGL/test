@@ -12,7 +12,7 @@ import { Settings } from './pages/Settings';
 import { Simulation } from './pages/Simulation';
 import { Attendance } from './pages/Attendance';
 import { ProductionData } from './pages/ProductionData';
-import { Menu, Loader2 } from 'lucide-react';
+import { Menu, Loader2, HardHat } from 'lucide-react';
 
 const Layout = ({ children }: { children?: React.ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -52,6 +52,16 @@ const Layout = ({ children }: { children?: React.ReactNode }) => {
   );
 };
 
+const WeavingPlaceholder = () => (
+    <div className="h-full flex flex-col items-center justify-center text-slate-400">
+        <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+            <HardHat size={48} className="text-slate-300" />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-600 mb-2">织造工段</h2>
+        <p>该模块正在开发中，敬请期待...</p>
+    </div>
+);
+
 const App: React.FC = () => {
   return (
     <AuthProvider>
@@ -60,6 +70,7 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/login" element={<Login />} />
             
+            {/* Styling Section Routes */}
             <Route path="/" element={
               <Layout>
                 <Dashboard />
@@ -83,7 +94,15 @@ const App: React.FC = () => {
                 <SalaryCalculator />
               </Layout>
             } />
+
+            {/* Weaving Section Routes */}
+            <Route path="/weaving" element={
+                <Layout>
+                    <WeavingPlaceholder />
+                </Layout>
+            } />
             
+            {/* System Routes */}
             <Route path="/employees" element={
               <Layout>
                 <Employees />

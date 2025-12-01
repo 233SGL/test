@@ -59,8 +59,8 @@ export const Login: React.FC = () => {
                 <div className="w-16 h-16 bg-accent rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30">
                     <ShieldCheck size={40} className="text-white" />
                 </div>
-                <h1 className="text-3xl font-bold mb-4">鹤山定型工段</h1>
-                <p className="text-slate-300 text-lg mb-8">企业级薪酬权重管理系统 v2.4</p>
+                <h1 className="text-3xl font-bold mb-4">薪酬管理系统</h1>
+                <p className="text-slate-300 text-lg mb-8">企业级薪酬权重管理系统 v2.5</p>
                 <ul className="space-y-4 text-slate-400">
                     <li className="flex items-center gap-3">
                         <span className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-accent font-bold">1</span>
@@ -102,14 +102,14 @@ export const Login: React.FC = () => {
                     >
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-full bg-slate-100 group-hover:bg-blue-100 flex items-center justify-center text-slate-600 group-hover:text-blue-600 transition-colors font-bold">
-                                {(u.displayName || "").charAt(0) || "?"}
+                                {u.displayName[0]}
                             </div>
                             <div className="flex-1">
                                 <div className="font-semibold text-slate-700 group-hover:text-blue-700">
                                     {u.displayName}
                                 </div>
                                 <div className="text-xs text-slate-400 group-hover:text-blue-500">
-                                    {u.customRoleName || (ROLE_LABELS[u.role] ? ROLE_LABELS[u.role].split(' ')[0] : '未知角色')}
+                                    {u.customRoleName || ROLE_LABELS[u.role].split(' ')[0]}
                                 </div>
                             </div>
                             <ChevronRight size={18} className="text-slate-300 group-hover:text-accent" />
@@ -130,11 +130,11 @@ export const Login: React.FC = () => {
 
                  <div className="flex items-center gap-4 mb-8">
                      <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-2xl font-bold">
-                        {(selectedUser.displayName || "").charAt(0) || "?"}
+                        {selectedUser.displayName[0]}
                      </div>
                      <div>
                          <h3 className="text-xl font-bold text-slate-800">{selectedUser.displayName}</h3>
-                         <p className="text-slate-500 text-sm">{selectedUser.customRoleName || ROLE_LABELS[selectedUser.role] || '未知角色'}</p>
+                         <p className="text-slate-500 text-sm">{selectedUser.customRoleName || ROLE_LABELS[selectedUser.role]}</p>
                      </div>
                  </div>
 
@@ -170,7 +170,7 @@ export const Login: React.FC = () => {
                 <div className={`w-2 h-2 rounded-full ${connecting ? 'bg-amber-400' : 'bg-emerald-500'}`}></div>
                 <span>{connecting ? '连接数据库...' : '数据库已连接'}</span>
             </div>
-            <span>System v2.4</span>
+            <span>System v2.5</span>
           </div>
         </div>
       </div>
