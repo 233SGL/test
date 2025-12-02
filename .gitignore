@@ -25,3 +25,9 @@ dist-ssr
 
 # AI Editor configurations
 .codebuddy
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example

@@ -27,7 +27,7 @@
 
 1. **创建数据库表**（仅需执行一次）
    - 打开 Supabase 控制台 → SQL Editor
-   - 复制 `init-db.sql` 的内容并执行
+   - 复制 `database/init-db.sql` 的内容并执行
    - 这会创建 `employees`, `workshops`, `settings`, `system_users`, `monthly_data` 表
 
 2. **安装依赖**
@@ -119,13 +119,17 @@ curl http://localhost:3000/api/health
 - Vite 6
 - Tailwind CSS（PostCSS 构建，无 CDN）
 
-## 目录结构（部分）
+## 目录结构
 
 ```
-components/      // UI 组件
-contexts/        // Auth/Data 上下文
-pages/           // 页面视图
-services/        // 计算与数据服务
+components/      # React组件
+contexts/        # React上下文
+pages/           # 页面组件
+services/        # 服务层
+config/          # 配置文件
+database/        # 数据库脚本
+docs/            # 项目文档
+dist/            # 构建输出
 ```
 
 ## 部署说明
@@ -158,7 +162,7 @@ services/        // 计算与数据服务
 
 ## 文档
 
-详见 `API_DOCUMENTATION.md` 获取 API 与类型说明。
+详见 `docs/API_DOCUMENTATION.md` 获取 API 与类型说明。
 
 ## 更新日志
 
