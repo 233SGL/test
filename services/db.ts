@@ -11,7 +11,7 @@ const resolveApiBase = (): string => {
       return `${protocol}//${hostname}/api`;
     }
 
-    const devPorts = new Set(['3001', '5173', '4173']);
+    const devPorts = new Set(['3001', '5173', '4173', '5174']);
     const targetPort = devPorts.has(port) ? '3000' : port;
     return `${protocol}//${hostname}:${targetPort}/api`;
   }
@@ -169,14 +169,22 @@ export class DatabaseService {
   // === System Users ===
 
   private mapSystemUserRow(row: any): SystemUser {
-    const normalizeArray = (value: any): string[] => {
-      if (Array.isArray(value)) return value;
+    const normalizeArray = <T extends string>(value: any): T[] => {
+      if (Array.isArray(value)) {
+        return value.map((entry) => String(entry) as T);
+      }
       if (typeof value === 'string' && value.trim()) {
         try {
           const parsed = JSON.parse(value);
-          return Array.isArray(parsed) ? parsed : [];
+          if (Array.isArray(parsed)) {
+            return parsed.map((entry) => String(entry) as T);
+          }
         } catch {
-          return [];
+          return value
+            .split(',')
+            .map((token) => token.trim())
+            .filter(Boolean)
+            .map((entry) => entry as T);
         }
       }
       return [];
@@ -190,8 +198,8 @@ export class DatabaseService {
       customRoleName: row.custom_role_name ?? row.customRoleName ?? undefined,
       pinCode: row.pin_code ?? row.pinCode,
       isSystem: row.is_system ?? row.isSystem ?? false,
-      scopes: normalizeArray(row.scopes),
-      permissions: normalizeArray(row.permissions)
+      scopes: normalizeArray<string>(row.scopes),
+      permissions: normalizeArray<Permission>(row.permissions)
     };
   }
 
