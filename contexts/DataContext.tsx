@@ -27,6 +27,9 @@ interface DataContextType {
   
   // Workshops
   addWorkshopFolder: (workshopId: string, folderName: string) => Promise<void>;
+  addWorkshop: (name: string, code: string) => Promise<void>;
+  deleteWorkshop: (id: string) => Promise<void>;
+  deleteWorkshopFolder: (workshopId: string, folderName: string) => Promise<void>;
   
   // User Management
   addSystemUser: (user: Omit<SystemUser, 'id'>) => Promise<void>;
@@ -268,6 +271,37 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsSaving(false);
   };
 
+    const deleteWorkshopFolder = async (workshopId: string, folderName: string) => {
+      const targetWs = workshops.find(w => w.id === workshopId);
+      if (!targetWs) return;
+      if (!targetWs.departments.includes(folderName)) return;
+
+      const updatedWs = { ...targetWs, departments: targetWs.departments.filter(d => d !== folderName) };
+      const newWorkshops = workshops.map(w => w.id === workshopId ? updatedWs : w);
+
+      setWorkshops(newWorkshops);
+      setIsSaving(true);
+      await db.saveWorkshops(newWorkshops);
+      setIsSaving(false);
+    };
+
+    const addWorkshop = async (name: string, code: string) => {
+      const newWs: Workshop = { id: generateId(), name, code, departments: [] };
+      const newWorkshops = [...workshops, newWs];
+      setWorkshops(newWorkshops);
+      setIsSaving(true);
+      await db.saveWorkshops(newWorkshops);
+      setIsSaving(false);
+    };
+
+    const deleteWorkshop = async (id: string) => {
+      const newWorkshops = workshops.filter(w => w.id !== id);
+      setWorkshops(newWorkshops);
+      setIsSaving(true);
+      await db.saveWorkshops(newWorkshops);
+      setIsSaving(false);
+    };
+
   // === Employee CRUD ===
   const addEmployee = async (empData: Omit<Employee, 'id'>) => {
     const newEmp: Employee = { ...empData, id: generateId() };
@@ -400,6 +434,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       removeEmployee,
       resetMonthData,
       addWorkshopFolder,
+      addWorkshop,
+      deleteWorkshop,
+      deleteWorkshopFolder,
       addSystemUser,
       updateSystemUser,
       deleteSystemUser,

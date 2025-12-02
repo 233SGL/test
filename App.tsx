@@ -39,8 +39,14 @@ const Layout = ({ children }: { children?: React.ReactNode }) => {
         {/* Mobile Header */}
         <div className="lg:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between z-10">
           <span className="font-bold text-slate-800">薪酬管理系统</span>
-          <button onClick={() => setSidebarOpen(true)} className="text-slate-600">
-            <Menu size={24} />
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="text-slate-600"
+            aria-label="打开导航菜单"
+          >
+            <Menu size={24} aria-hidden="true" />
+            <span className="sr-only">打开菜单</span>
           </button>
         </div>
         
