@@ -253,14 +253,33 @@ async getSystemUsers(): Promise<SystemUser[]>
 
 **返回**: 系统用户列表
 
-##### 保存系统用户列表
+##### 新增系统用户
 
 ```typescript
-async saveSystemUsers(users: SystemUser[]): Promise<void>
+async createSystemUser(user: SystemUser): Promise<SystemUser>
 ```
 
 **参数**:
-- `users`: 系统用户数组
+- `user`: 前端构建的新用户对象（需要预生成 `id`）
+
+**返回**: 后端保存后的系统用户对象
+
+##### 更新系统用户
+
+```typescript
+async updateSystemUserRemote(user: SystemUser): Promise<SystemUser>
+```
+
+**说明**: 将改动同步到数据库并返回最新记录
+
+##### 删除系统用户
+
+```typescript
+async deleteSystemUserRemote(id: string): Promise<void>
+```
+
+**参数**:
+- `id`: 需要删除的系统用户 ID
 
 #### 员工管理
 
@@ -272,14 +291,16 @@ async getEmployees(): Promise<Employee[]>
 
 **返回**: 员工列表（包含已离职员工）
 
-##### 保存员工列表
+##### 新增单个员工
 
 ```typescript
-async saveEmployees(employees: Employee[]): Promise<void>
+async createEmployee(employee: Employee): Promise<Employee>
 ```
 
 **参数**:
-- `employees`: 员工数组
+- `employee`: 需要写入数据库的新员工（前端先生成 `id`）
+
+**返回**: 后端返回的完整员工记录（会自动从 `snake_case` 转为 `camelCase`）
 
 ##### 更新单个员工
 

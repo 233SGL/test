@@ -168,6 +168,33 @@ export class DatabaseService {
 
   // === System Users ===
 
+  private mapSystemUserRow(row: any): SystemUser {
+    const normalizeArray = (value: any): string[] => {
+      if (Array.isArray(value)) return value;
+      if (typeof value === 'string' && value.trim()) {
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      }
+      return [];
+    };
+
+    return {
+      id: row.id,
+      username: row.username,
+      displayName: row.display_name ?? row.displayName,
+      role: row.role,
+      customRoleName: row.custom_role_name ?? row.customRoleName ?? undefined,
+      pinCode: row.pin_code ?? row.pinCode,
+      isSystem: row.is_system ?? row.isSystem ?? false,
+      scopes: normalizeArray(row.scopes),
+      permissions: normalizeArray(row.permissions)
+    };
+  }
+
   public async getSystemUsers(): Promise<SystemUser[]> {
     await this.ensureConnection();
     try {
@@ -175,17 +202,7 @@ export class DatabaseService {
       if (!response.ok) throw new Error('Failed to fetch users');
       const data = await response.json();
       // Convert snake_case from DB to camelCase for frontend
-      return data.map((user: any) => ({
-        id: user.id,
-        username: user.username,
-        displayName: user.display_name,
-        role: user.role,
-        customRoleName: user.custom_role_name,
-        pinCode: user.pin_code,
-        isSystem: user.is_system,
-        scopes: user.scopes || [],
-        permissions: user.permissions || []
-      }));
+      return data.map((user: any) => this.mapSystemUserRow(user));
     } catch (error) {
       console.error('Error fetching users:', error);
       return [];
@@ -197,7 +214,79 @@ export class DatabaseService {
     console.warn('saveSystemUsers not yet implemented in backend');
   }
 
+  public async createSystemUser(user: SystemUser): Promise<SystemUser> {
+    await this.ensureConnection();
+    const response = await fetch(`${API_BASE}/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...user,
+        displayName: user.displayName,
+        customRoleName: user.customRoleName,
+        pinCode: user.pinCode,
+        scopes: user.scopes,
+        permissions: user.permissions
+      })
+    });
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || 'Failed to create system user');
+    }
+    const data = await response.json();
+    return this.mapSystemUserRow(data);
+  }
+
+  public async updateSystemUserRemote(user: SystemUser): Promise<SystemUser> {
+    await this.ensureConnection();
+    const response = await fetch(`${API_BASE}/users/${user.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: user.username,
+        displayName: user.displayName,
+        role: user.role,
+        customRoleName: user.customRoleName,
+        pinCode: user.pinCode,
+        isSystem: user.isSystem,
+        scopes: user.scopes,
+        permissions: user.permissions
+      })
+    });
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || 'Failed to update system user');
+    }
+    const data = await response.json();
+    return this.mapSystemUserRow(data);
+  }
+
+  public async deleteSystemUserRemote(id: string): Promise<void> {
+    await this.ensureConnection();
+    const response = await fetch(`${API_BASE}/users/${id}`, {
+      method: 'DELETE'
+    });
+    if (!response.ok && response.status !== 204) throw new Error('Failed to delete system user');
+  }
+
   // === Personnel ===
+
+  private mapEmployeeRow(row: any): Employee {
+    const expectedHoursValue = row.expected_daily_hours ?? row.expectedDailyHours;
+    return {
+      id: row.id,
+      name: row.name,
+      gender: row.gender,
+      workshopId: row.workshop_id || row.workshopId,
+      department: row.department,
+      position: row.position,
+      joinDate: row.join_date || row.joinDate,
+      standardBaseScore: Number(row.standard_base_score ?? row.standardBaseScore ?? 0),
+      status: row.status,
+      phone: row.phone,
+      notes: row.notes,
+      expectedDailyHours: expectedHoursValue == null ? undefined : Number(expectedHoursValue)
+    };
+  }
 
   public async getEmployees(): Promise<Employee[]> {
     await this.ensureConnection();
@@ -206,23 +295,38 @@ export class DatabaseService {
       if (!response.ok) throw new Error('Failed to fetch employees');
       const data = await response.json();
       // Convert snake_case from DB to camelCase for frontend
-      return data.map((emp: any) => ({
-        id: emp.id,
-        name: emp.name,
-        gender: emp.gender,
-        workshopId: emp.workshop_id,
-        department: emp.department,
-        position: emp.position,
-        joinDate: emp.join_date,
-        standardBaseScore: Number(emp.standard_base_score),
-        status: emp.status,
-        phone: emp.phone,
-        expectedDailyHours: Number(emp.expected_daily_hours)
-      }));
+      return data.map((emp: any) => this.mapEmployeeRow(emp));
     } catch (error) {
       console.error('Error fetching employees:', error);
       return [];
     }
+  }
+
+  public async createEmployee(employee: Employee): Promise<Employee> {
+    await this.ensureConnection();
+    const payload = {
+      id: employee.id,
+      name: employee.name,
+      gender: employee.gender,
+      workshopId: employee.workshopId,
+      department: employee.department,
+      position: employee.position,
+      joinDate: employee.joinDate,
+      standardBaseScore: employee.standardBaseScore,
+      status: employee.status,
+      phone: employee.phone,
+      expectedDailyHours: employee.expectedDailyHours
+    };
+
+    const response = await fetch(`${API_BASE}/employees`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) throw new Error('Failed to create employee');
+    const data = await response.json();
+    return this.mapEmployeeRow(data);
   }
 
   public async saveEmployees(employees: Employee[]): Promise<void> {

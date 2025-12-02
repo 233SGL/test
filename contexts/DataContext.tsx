@@ -271,11 +271,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // === Employee CRUD ===
   const addEmployee = async (empData: Omit<Employee, 'id'>) => {
     const newEmp: Employee = { ...empData, id: generateId() };
-    const newEmps = [...employees, newEmp];
-    setEmployees(newEmps);
     setIsSaving(true);
-    await db.saveEmployees(newEmps);
-    setIsSaving(false);
+    try {
+      const saved = await db.createEmployee(newEmp);
+      setEmployees(prev => [...prev, saved]);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const updateEmployee = async (updatedEmp: Employee) => {
@@ -307,28 +309,33 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // === System User CRUD ===
   const addSystemUser = async (user: Omit<SystemUser, 'id'>) => {
-      const newUser = { ...user, id: generateId() };
-      const newUsers = [...systemUsers, newUser];
-      setSystemUsers(newUsers);
       setIsSaving(true);
-      await db.saveSystemUsers(newUsers);
-      setIsSaving(false);
+      try {
+        const created = await db.createSystemUser({ ...user, id: generateId() });
+        setSystemUsers(prev => [...prev, created]);
+      } finally {
+        setIsSaving(false);
+      }
   };
 
   const updateSystemUser = async (user: SystemUser) => {
-      const newUsers = systemUsers.map(u => u.id === user.id ? user : u);
-      setSystemUsers(newUsers);
       setIsSaving(true);
-      await db.saveSystemUsers(newUsers);
-      setIsSaving(false);
+      try {
+        const updated = await db.updateSystemUserRemote(user);
+        setSystemUsers(prev => prev.map(u => u.id === user.id ? updated : u));
+      } finally {
+        setIsSaving(false);
+      }
   };
 
   const deleteSystemUser = async (id: string) => {
-      const newUsers = systemUsers.filter(u => u.id !== id);
-      setSystemUsers(newUsers);
       setIsSaving(true);
-      await db.saveSystemUsers(newUsers);
-      setIsSaving(false);
+      try {
+        await db.deleteSystemUserRemote(id);
+        setSystemUsers(prev => prev.filter(u => u.id !== id));
+      } finally {
+        setIsSaving(false);
+      }
   };
 
   const updateSettings = async (changes: Partial<GlobalSettings>) => {

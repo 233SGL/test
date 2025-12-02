@@ -21,8 +21,8 @@ import {
 } from 'lucide-react';
 
 export const Settings: React.FC = () => {
-  const { hasPermission, user: currentUser } = useAuth();
-  const { resetMonthData, systemUsers, addSystemUser, updateSystemUser, deleteSystemUser, workshops } = useData();
+    const { hasPermission, user: currentUser } = useAuth();
+    const { resetMonthData, systemUsers, addSystemUser, updateSystemUser, deleteSystemUser, workshops, isSaving } = useData();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [statusMsg, setStatusMsg] = useState<{type: 'success' | 'error', text: string} | null>(null);
@@ -149,29 +149,36 @@ export const Settings: React.FC = () => {
       e.preventDefault();
       if (!userForm.username || !userForm.displayName || !userForm.pinCode) return;
 
-      const userData = {
-          ...userForm,
-          permissions: userForm.permissions || [],
-          scopes: userForm.scopes || []
-      } as SystemUser;
-
-      if (userForm.id) {
-          await updateSystemUser(userData);
-          showStatus('success', '用户信息已更新');
-      } else {
-          await addSystemUser({
-              username: userForm.username,
-              displayName: userForm.displayName,
-              role: userForm.role || UserRole.GUEST,
-              customRoleName: userForm.customRoleName,
+      try {
+          const userData = {
+              ...userForm,
               permissions: userForm.permissions || [],
-              scopes: userForm.scopes || [],
-              pinCode: userForm.pinCode,
-              isSystem: false
-          });
-          showStatus('success', '新用户已创建');
+              scopes: userForm.scopes || []
+          } as SystemUser;
+
+          if (userForm.id) {
+              await updateSystemUser(userData);
+              showStatus('success', '用户信息已更新');
+          } else {
+              await addSystemUser({
+                  username: userForm.username,
+                  displayName: userForm.displayName,
+                  role: userForm.role || UserRole.GUEST,
+                  customRoleName: userForm.customRoleName,
+                  permissions: userForm.permissions || [],
+                  scopes: userForm.scopes || [],
+                  pinCode: userForm.pinCode,
+                  isSystem: false
+              });
+              showStatus('success', '新用户已创建');
+          }
+          setShowUserModal(false);
+          setUserForm({ permissions: [], scopes: [], role: UserRole.SECTION_HEAD });
+      } catch (err) {
+          console.error('Failed to save user', err);
+          const message = err instanceof Error ? err.message : '保存失败，请稍后再试';
+          showStatus('error', message);
       }
-      setShowUserModal(false);
   };
 
   const handleDeleteUser = async (u: SystemUser) => {
@@ -249,7 +256,7 @@ export const Settings: React.FC = () => {
                             />
                         </div>
                         <button 
-                            onClick={() => { setUserForm({ permissions: [], scopes: [] }); setShowUserModal(true); }}
+                            onClick={() => { setUserForm({ permissions: [], scopes: [], role: UserRole.SECTION_HEAD }); setShowUserModal(true); }}
                             className="flex items-center gap-2 px-3 py-2 bg-slate-800 text-white rounded hover:bg-slate-900 text-sm font-medium"
                         >
                             <Plus size={16} /> 新增用户
@@ -303,7 +310,7 @@ export const Settings: React.FC = () => {
                                         <td className="px-4 py-2 text-center font-mono text-slate-400">****</td>
                                         <td className="px-4 py-2 flex justify-end gap-2">
                                             <button 
-                                                onClick={() => { setUserForm(u); setShowUserModal(true); }}
+                                                onClick={() => { setUserForm({ ...u, permissions: [...(u.permissions || [])], scopes: [...(u.scopes || [])] }); setShowUserModal(true); }}
                                                 className="p-1.5 text-slate-400 hover:text-blue-600 bg-slate-50 rounded"
                                                 title="编辑"
                                             >
@@ -457,14 +464,15 @@ export const Settings: React.FC = () => {
                       <div className="flex justify-end gap-3 mt-6">
                           <button 
                             type="button" 
-                            onClick={() => setShowUserModal(false)}
-                            className="px-4 py-2 border border-slate-300 rounded text-slate-600 hover:bg-slate-50"
+                                                        onClick={() => { setShowUserModal(false); setUserForm({ permissions: [], scopes: [], role: UserRole.SECTION_HEAD }); }}
+                                                        className="px-4 py-2 border border-slate-300 rounded text-slate-600 hover:bg-slate-50"
                           >
                               取消
                           </button>
                           <button 
                             type="submit" 
-                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                                        disabled={isSaving}
+                                                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
                           >
                               保存配置
                           </button>
