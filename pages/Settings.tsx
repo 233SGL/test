@@ -247,7 +247,9 @@ export const Settings: React.FC = () => {
                     <div className="mb-4 flex flex-col md:flex-row justify-between gap-4">
                         <div className="relative flex-1 max-w-sm">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <label htmlFor="user-search" className="sr-only">搜索用户</label>
                             <input 
+                                id="user-search"
                                 type="text"
                                 placeholder="搜索用户..."
                                 className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-orange-500 outline-none"
@@ -356,8 +358,9 @@ export const Settings: React.FC = () => {
                   <form onSubmit={handleSaveUser} className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                           <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-1">显示名称</label>
+                              <label htmlFor="user-display-name" className="block text-sm font-medium text-slate-700 mb-1">显示名称</label>
                               <input 
+                                  id="user-display-name"
                                   type="text" required
                                   className="w-full border border-slate-300 rounded px-3 py-2"
                                   value={userForm.displayName || ''}
@@ -365,8 +368,9 @@ export const Settings: React.FC = () => {
                               />
                           </div>
                           <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-1">登录用户名</label>
+                              <label htmlFor="user-username" className="block text-sm font-medium text-slate-700 mb-1">登录用户名</label>
                               <input 
+                                  id="user-username"
                                   type="text" required
                                   disabled={!!userForm.id}
                                   className="w-full border border-slate-300 rounded px-3 py-2 disabled:bg-slate-100"
@@ -375,8 +379,9 @@ export const Settings: React.FC = () => {
                               />
                           </div>
                           <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-1">登录 PIN 码</label>
+                              <label htmlFor="user-pin" className="block text-sm font-medium text-slate-700 mb-1">登录 PIN 码</label>
                               <input 
+                                  id="user-pin"
                                   type="text" required
                                   className="w-full border border-slate-300 rounded px-3 py-2 font-mono tracking-widest"
                                   value={userForm.pinCode || ''}
@@ -384,8 +389,9 @@ export const Settings: React.FC = () => {
                               />
                           </div>
                           <div>
-                              <label className="block text-sm font-medium text-slate-700 mb-1">系统角色模板</label>
+                              <label htmlFor="user-role" className="block text-sm font-medium text-slate-700 mb-1">系统角色模板</label>
                               <select 
+                                  id="user-role"
                                   className="w-full border border-slate-300 rounded px-3 py-2"
                                   value={userForm.role}
                                   onChange={e => setUserForm({...userForm, role: e.target.value as UserRole})}
@@ -396,8 +402,9 @@ export const Settings: React.FC = () => {
                               </select>
                           </div>
                           <div className="col-span-2">
-                               <label className="block text-sm font-medium text-slate-700 mb-1">自定义职位名称 (可选)</label>
+                                         <label htmlFor="user-custom-role" className="block text-sm font-medium text-slate-700 mb-1">自定义职位名称 (可选)</label>
                                <input 
+                                             id="user-custom-role"
                                   type="text"
                                   placeholder="例如：车间统计员 (为空则显示角色模板名)"
                                   className="w-full border border-slate-300 rounded px-3 py-2"
@@ -501,13 +508,22 @@ export const Settings: React.FC = () => {
                   >
                       <Download size={18} /> 导出备份
                   </button>
-                  <button 
-                    onClick={handleImportClick} disabled={isProcessing}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 text-slate-700 shadow-sm transition"
-                  >
-                      <Upload size={18} /> 恢复数据
-                  </button>
-                  <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileChange} />
+                                    <button 
+                                        onClick={handleImportClick} disabled={isProcessing}
+                                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 text-slate-700 shadow-sm transition"
+                                    >
+                                            <Upload size={18} aria-hidden="true" /> 恢复数据
+                                    </button>
+                                    <label htmlFor="import-backup" className="sr-only">选择要导入的备份文件</label>
+                                    <input
+                                        id="import-backup"
+                                        type="file"
+                                        ref={fileInputRef}
+                                        className="hidden"
+                                        accept=".json"
+                                        onChange={handleFileChange}
+                                        aria-label="导入备份文件"
+                                    />
                   
                   <div className="flex-1"></div>
                   

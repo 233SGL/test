@@ -300,7 +300,9 @@ export const Employees: React.FC = () => {
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <label htmlFor="employee-search" className="sr-only">搜索姓名或职位</label>
                 <input 
+                    id="employee-search"
                     type="text" 
                     placeholder="搜索姓名或职位..." 
                     className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
@@ -310,7 +312,9 @@ export const Employees: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
                 <Filter size={18} className="text-slate-500" />
+                <label htmlFor="employee-status-filter" className="sr-only">筛选在职状态</label>
                 <select 
+                    id="employee-status-filter"
                     className="border border-slate-300 rounded-lg px-3 py-2 bg-slate-50 focus:outline-none"
                     value={statusFilter}
                     onChange={e => setStatusFilter(e.target.value)}
@@ -398,7 +402,7 @@ export const Employees: React.FC = () => {
                     <h2 className="text-xl font-bold text-slate-800">
                         {editingEmp ? '编辑员工档案' : '录入新员工'}
                     </h2>
-                    <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                    <button type="button" title="关闭" aria-label="关闭" onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                         <X size={24} />
                     </button>
                 </div>
@@ -411,16 +415,18 @@ export const Employees: React.FC = () => {
                         </h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">姓名 <span className="text-red-500">*</span></label>
+                                <label htmlFor="employee-name" className="block text-sm font-medium text-slate-700 mb-1">姓名 <span className="text-red-500">*</span></label>
                                 <input 
+                                    id="employee-name"
                                     required type="text" 
                                     className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                                     value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">所属工段</label>
+                                <label htmlFor="employee-workshop" className="block text-sm font-medium text-slate-700 mb-1">所属工段</label>
                                 <select 
+                                    id="employee-workshop"
                                     disabled
                                     className="w-full border border-slate-300 rounded-lg px-3 py-2 bg-slate-100"
                                     value={formData.workshopId}
@@ -429,8 +435,9 @@ export const Employees: React.FC = () => {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">部门/文件夹 (可手填)</label>
+                                <label htmlFor="employee-department" className="block text-sm font-medium text-slate-700 mb-1">部门/文件夹 (可手填)</label>
                                 <input 
+                                    id="employee-department"
                                     list="dept-list"
                                     className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                                     value={formData.department} 
@@ -441,16 +448,18 @@ export const Employees: React.FC = () => {
                                 </datalist>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">职位</label>
+                                <label htmlFor="employee-position" className="block text-sm font-medium text-slate-700 mb-1">职位</label>
                                 <input 
+                                    id="employee-position"
                                     type="text"
                                     className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                                     value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">性别</label>
+                                <label htmlFor="employee-gender" className="block text-sm font-medium text-slate-700 mb-1">性别</label>
                                 <select 
+                                    id="employee-gender"
                                     className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                                     value={formData.gender} onChange={e => setFormData({...formData, gender: e.target.value as any})}
                                 >
@@ -459,8 +468,9 @@ export const Employees: React.FC = () => {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">在职状态</label>
+                                <label htmlFor="employee-status" className="block text-sm font-medium text-slate-700 mb-1">在职状态</label>
                                 <select 
+                                    id="employee-status"
                                     className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                                     value={formData.status} onChange={e => setFormData({...formData, status: e.target.value as any})}
                                 >
@@ -480,9 +490,10 @@ export const Employees: React.FC = () => {
                         </h3>
                         <div className="grid grid-cols-2 gap-4">
                              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                                <label className="block text-sm font-medium text-slate-700 mb-2">技能基础分 (Standard)</label>
+                                <label htmlFor="employee-base-score" className="block text-sm font-medium text-slate-700 mb-2">技能基础分 (Standard)</label>
                                 <div className="flex items-center gap-2">
                                     <input 
+                                        id="employee-base-score"
                                         type="number" 
                                         className="w-full text-lg font-bold border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-blue-600"
                                         value={formData.standardBaseScore} onChange={e => setFormData({...formData, standardBaseScore: parseInt(e.target.value) || 0})}
@@ -492,10 +503,11 @@ export const Employees: React.FC = () => {
                             </div>
 
                             <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                                <label className="block text-sm font-medium text-slate-700 mb-2">每日标准工时</label>
+                                <label htmlFor="employee-daily-hours" className="block text-sm font-medium text-slate-700 mb-2">每日标准工时</label>
                                 <div className="flex items-center gap-2">
                                     <Clock size={20} className="text-slate-400"/>
                                     <input 
+                                        id="employee-daily-hours"
                                         type="number" min="0" max="24" step="0.5"
                                         className="w-full text-lg font-bold border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-slate-700"
                                         value={formData.expectedDailyHours} onChange={e => setFormData({...formData, expectedDailyHours: parseFloat(e.target.value) || 0})}
@@ -525,8 +537,9 @@ export const Employees: React.FC = () => {
                       <div className="mb-4 text-sm font-bold text-slate-800 bg-slate-100 px-3 py-2 rounded">
                           {workshops.find(w => w.id === selectedWorkshopId)?.name}
                       </div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">文件夹名称</label>
+                      <label htmlFor="new-folder-name" className="block text-sm font-medium text-slate-700 mb-1">文件夹名称</label>
                       <input 
+                          id="new-folder-name"
                           autoFocus
                           type="text" required
                           className="w-full border border-slate-300 rounded-lg px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -549,8 +562,9 @@ export const Employees: React.FC = () => {
               <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
                   <h3 className="text-lg font-bold mb-4">新建一级工段</h3>
                   <form onSubmit={handleCreateWorkshop}>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">工段名称 (Name)</label>
+                      <label htmlFor="new-workshop-name" className="block text-sm font-medium text-slate-700 mb-1">工段名称 (Name)</label>
                       <input 
+                          id="new-workshop-name"
                           autoFocus
                           type="text" required
                           className="w-full border border-slate-300 rounded-lg px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -558,8 +572,9 @@ export const Employees: React.FC = () => {
                           onChange={e => setNewWorkshopName(e.target.value)}
                           placeholder="例如：染色工段"
                       />
-                      <label className="block text-sm font-medium text-slate-700 mb-1">唯一标识码 (Code)</label>
+                      <label htmlFor="new-workshop-code" className="block text-sm font-medium text-slate-700 mb-1">唯一标识码 (Code)</label>
                       <input 
+                          id="new-workshop-code"
                           type="text" required
                           className="w-full border border-slate-300 rounded-lg px-3 py-2 mb-4 focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm"
                           value={newWorkshopCode}
