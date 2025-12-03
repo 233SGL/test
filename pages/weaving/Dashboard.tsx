@@ -1,64 +1,141 @@
-import React from 'react';
-import { HardHat, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { HardHat, TrendingUp, Users, Activity, AlertCircle } from 'lucide-react';
+import { WeavingConfig, WeavingMonthlyData, WeavingCalculationResult, DEFAULT_WEAVING_CONFIG } from '../../weavingTypes';
+import { WeavingResults } from '../../components/weaving/WeavingResults';
 
 export const WeavingDashboard = () => {
+  // TODO: 从数据库读取真实数据
+  const [config] = useState<WeavingConfig>(DEFAULT_WEAVING_CONFIG);
+  const [monthlyData] = useState<WeavingMonthlyData>({
+    netFormationRate: 75,
+    equivalentOutput: 200000,
+    activeMachines: 10,
+    actualOperators: 17,
+    operationRate: 78,
+    attendanceDays: 26,
+  });
+  const [result, setResult] = useState<WeavingCalculationResult | null>(null);
+
+  useEffect(() => {
+    calculate();
+  }, [config, monthlyData]);
+
+  const calculate = () => {
+    const {
+      netFormationBenchmark,
+      operationRateBenchmark,
+      targetEquivalentOutput,
+      operatorQuota,
+      avgTargetBonus,
+      adminTeamSize,
+      operationRateBonusUnit,
+      leaderCoef,
+      memberCoef,
+      leaderBaseSalary,
+      memberBaseSalary,
+    } = config;
+
+    const {
+      netFormationRate,
+      equivalentOutput,
+      activeMachines,
+      actualOperators,
+      operationRate,
+    } = monthlyData;
+
+    if (activeMachines === 0 || actualOperators === 0 || targetEquivalentOutput === 0) {
+      setResult(null);
+      return;
+    }
+
+    const netFormationDiff = netFormationRate - netFormationBenchmark;
+    const outputRatio = equivalentOutput / (targetEquivalentOutput * activeMachines);
+    const operatorRatio = operatorQuota / actualOperators;
+
+    const qualityBonusCoef = (netFormationDiff * 100 / 30) * outputRatio * operatorRatio;
+    const qualityBonusTotal = qualityBonusCoef * avgTargetBonus * adminTeamSize;
+    const operationRateDiff = operationRate - operationRateBenchmark;
+    const operationBonusTotal = operationRateDiff * 100 * operationRateBonusUnit;
+    const totalBonusPool = qualityBonusTotal + operationBonusTotal;
+    const memberCount = adminTeamSize - 1;
+    const totalCoef = leaderCoef + (memberCoef * memberCount);
+    const leaderBonus = totalCoef > 0 ? (totalBonusPool / totalCoef) * leaderCoef : 0;
+    const memberBonus = totalCoef > 0 ? (totalBonusPool / totalCoef) * memberCoef : 0;
+
+    setResult({
+      qualityBonusCoef,
+      qualityBonusTotal,
+      operationBonusTotal,
+      totalBonusPool,
+      totalCoef,
+      leaderBonus,
+      memberBonus,
+      leaderTotalWage: leaderBaseSalary + leaderBonus,
+      memberTotalWage: memberBaseSalary + memberBonus,
+    });
+  };
+
   return (
     <div className="h-full flex flex-col">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">织造工段</h1>
-        <p className="text-slate-600">织造工段生产数据管理和薪酬计算</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <HardHat className="text-blue-600" size={24} />
-            </div>
-            <span className="text-sm text-slate-500">即将上线</span>
-          </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">生产数据录入</h3>
-          <p className="text-slate-600 text-sm mb-4">记录织造工段每日生产数据，包括产量、工时等信息</p>
-          <button className="flex items-center gap-2 text-blue-600 text-sm font-medium hover:text-blue-700">
-            了解更多 <ArrowRight size={16} />
-          </button>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <HardHat className="text-green-600" size={24} />
-            </div>
-            <span className="text-sm text-slate-500">即将上线</span>
-          </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">薪酬计算</h3>
-          <p className="text-slate-600 text-sm mb-4">基于织造工段特定的计薪规则计算员工薪酬</p>
-          <button className="flex items-center gap-2 text-green-600 text-sm font-medium hover:text-green-700">
-            了解更多 <ArrowRight size={16} />
-          </button>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <HardHat className="text-purple-600" size={24} />
-            </div>
-            <span className="text-sm text-slate-500">即将上线</span>
-          </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">数据分析</h3>
-          <p className="text-slate-600 text-sm mb-4">可视化织造工段生产数据和薪酬分析</p>
-          <button className="flex items-center gap-2 text-purple-600 text-sm font-medium hover:text-purple-700">
-            了解更多 <ArrowRight size={16} />
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-12 bg-blue-50 rounded-xl p-8 text-center">
-        <HardHat size={48} className="text-blue-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">织造工段模块开发中</h2>
-        <p className="text-slate-600 max-w-md mx-auto">
-          织造工段模块正在积极开发中，敬请期待更多功能的上线。如有任何建议或需求，请联系系统管理员。
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-slate-900 mb-2 flex items-center gap-3">
+          <HardHat className="text-blue-600" size={32} />
+          织造工段 - 数据大盘
+        </h1>
+        <p className="text-slate-600">
+          管理员班考核指标概览与薪酬分析
         </p>
+      </div>
+
+      <div className="flex-1 overflow-y-auto custom-scrollbar pb-10">
+        {/* 关键指标卡片 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            <div className="flex items-center gap-2 text-slate-500 mb-2">
+              <Activity size={18} />
+              <span className="text-sm font-medium">成网率</span>
+            </div>
+            <div className="text-2xl font-bold text-slate-900">{monthlyData.netFormationRate}%</div>
+            <div className="text-xs text-slate-400 mt-1">基准: {config.netFormationBenchmark}%</div>
+          </div>
+
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            <div className="flex items-center gap-2 text-slate-500 mb-2">
+              <TrendingUp size={18} />
+              <span className="text-sm font-medium">运转率</span>
+            </div>
+            <div className="text-2xl font-bold text-slate-900">{monthlyData.operationRate}%</div>
+            <div className="text-xs text-slate-400 mt-1">基准: {config.operationRateBenchmark}%</div>
+          </div>
+
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            <div className="flex items-center gap-2 text-slate-500 mb-2">
+              <Users size={18} />
+              <span className="text-sm font-medium">在岗人数</span>
+            </div>
+            <div className="text-2xl font-bold text-slate-900">{monthlyData.actualOperators} 人</div>
+            <div className="text-xs text-slate-400 mt-1">定员: {config.operatorQuota} 人</div>
+          </div>
+
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            <div className="flex items-center gap-2 text-slate-500 mb-2">
+              <AlertCircle size={18} />
+              <span className="text-sm font-medium">等效产量</span>
+            </div>
+            <div className="text-2xl font-bold text-slate-900">{monthlyData.equivalentOutput.toLocaleString()} ㎡</div>
+            <div className="text-xs text-slate-400 mt-1">目标: {(config.targetEquivalentOutput * monthlyData.activeMachines).toLocaleString()} ㎡</div>
+          </div>
+        </div>
+
+        {/* 薪酬计算结果展示 */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
+            <h3 className="font-bold text-slate-800">当月薪酬预估</h3>
+          </div>
+          <div className="p-6">
+            <WeavingResults result={result} />
+          </div>
+        </div>
       </div>
     </div>
   );
