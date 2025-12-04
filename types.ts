@@ -8,6 +8,54 @@ export enum UserRole {
   GUEST = 'GUEST'
 }
 
+// ========================================
+// 新权限系统：三维权限模型
+// ========================================
+
+// 1. 工段范围（Workshop Scope）
+export type WorkshopScope = 'styling' | 'weaving' | 'all';
+
+// 2. 页面类型（Page Type）
+export type PageType =
+  // 通用页面（根据工段映射到不同路由）
+  | 'dashboard'        // 数据大盘
+  | 'production'       // 生产数据录入
+  | 'calculator'       // 积分计算
+  | 'attendance'       // 每日工时（仅定型）
+  | 'simulation'       // 模拟沙箱（仅定型）
+  | 'config'           // 工段配置
+  | 'announcements'    // 工段公告
+  // 系统页面（不受工段限制）
+  | 'employees'        // 员工档案
+  | 'settings';        // 系统设置
+
+// 3. 编辑权限（Edit Permission）
+export type EditPermission =
+  // 生产数据编辑
+  | 'edit_production_data'   // 编辑产量、单价、KPI、固定包
+  | 'edit_attendance'        // 编辑工时
+  | 'edit_config'            // 编辑工段配置参数
+  // 积分策略
+  | 'edit_base_score'        // 编辑基础分
+  | 'edit_weights'           // 编辑权重
+  | 'apply_simulation'       // 应用模拟
+  // 人员管理
+  | 'manage_employees'       // 员工档案增删改
+  // 系统管理
+  | 'manage_announcements'   // 公告管理
+  | 'manage_system';         // 系统设置
+
+// 新权限结构
+export interface UserPermissions {
+  scopes: WorkshopScope[];     // 工段范围
+  pages: PageType[];           // 可查看页面
+  edits: EditPermission[];     // 编辑权限
+}
+
+// ========================================
+// 旧权限系统（保留以保持兼容性）
+// ========================================
+
 // Granular Permissions: View (Page Access) vs Edit (Action)
 export type Permission =
   // --- Page Access (页面访问) ---
@@ -99,8 +147,14 @@ export interface SystemUser {
   displayName: string;
   role: UserRole;
   customRoleName?: string;
-  permissions: Permission[];
-  scopes: string[];
+
+  // 新权限系统
+  newPermissions?: UserPermissions;  // 新的三维权限
+
+  // 旧权限系统（保留兼容）
+  permissions: Permission[];  // 旧的细碎权限列表
+  scopes: string[];          // 工段范围（新旧系统共用）
+
   pinCode: string;
   avatar?: string;
   isSystem?: boolean;

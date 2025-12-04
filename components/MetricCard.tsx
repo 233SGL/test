@@ -19,12 +19,12 @@ const colorStyles = {
 
 export const MetricCard: React.FC<MetricCardProps> = ({ label, value, icon: Icon, color = 'blue' }) => {
   return (
-    <div className={`p-6 rounded-xl border bg-white shadow-sm flex items-start justify-between`}>
+    <div className={`p-6 rounded-xl border bg-white shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex items-start justify-between group`}>
       <div>
-        <p className="text-sm font-medium text-slate-500 mb-1">{label}</p>
-        <h3 className="text-2xl font-bold text-slate-800">{value}</h3>
+        <p className="text-sm font-medium text-slate-500 mb-1 group-hover:text-slate-600 transition-colors">{label}</p>
+        <h3 className="text-2xl font-bold text-slate-800 tracking-tight">{value}</h3>
       </div>
-      <div className={`p-3 rounded-lg ${colorStyles[color]}`}>
+      <div className={`p-3 rounded-lg ${colorStyles[color]} bg-opacity-50 group-hover:scale-110 transition-transform duration-300`}>
         <Icon size={24} />
       </div>
     </div>

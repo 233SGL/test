@@ -25,8 +25,8 @@ export const WeavingDataEntry: React.FC<WeavingDataEntryProps> = ({
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-            <div className="flex items-center gap-2 mb-6">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-center shadow-sm">
                     <Calendar className="text-blue-600" size={20} />
                 </div>
                 <div>
@@ -46,7 +46,7 @@ export const WeavingDataEntry: React.FC<WeavingDataEntryProps> = ({
                             type="number"
                             value={data.netFormationRate || ''}
                             onChange={(e) => handleChange('netFormationRate', parseFloat(e.target.value))}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all duration-200 outline-none"
                             placeholder="例如: 75"
                         />
                         <span className="absolute right-3 top-2 text-slate-400">%</span>
@@ -67,7 +67,7 @@ export const WeavingDataEntry: React.FC<WeavingDataEntryProps> = ({
                         />
                         <button
                             onClick={() => setIsCalculatorOpen(true)}
-                            className="px-3 py-2 bg-blue-50 text-blue-600 rounded-md border border-blue-200 hover:bg-blue-100 transition-colors"
+                            className="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg border border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-all duration-200 shadow-sm hover:shadow"
                             title="打开等效产量计算器"
                         >
                             <Calculator size={20} />

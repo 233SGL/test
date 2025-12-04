@@ -31,16 +31,20 @@ export const WeavingConfiguration: React.FC<WeavingConfigurationProps> = ({
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition-colors"
+                className="w-full flex items-center justify-between p-4 bg-slate-50/50 hover:bg-slate-100/80 transition-all duration-200 group"
             >
-                <div className="flex items-center gap-2">
-                    <Settings className="text-slate-500" size={20} />
-                    <h3 className="font-semibold text-slate-800">后台常量配置</h3>
-                    <span className="text-xs text-slate-500 font-normal ml-2">
-                        (点击{isOpen ? '收起' : '展开'}以修改基准参数)
-                    </span>
+                <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg bg-white border border-slate-200 shadow-sm group-hover:shadow-md transition-all duration-200 ${isOpen ? 'text-blue-600' : 'text-slate-500'}`}>
+                        <Settings size={20} />
+                    </div>
+                    <div className="text-left">
+                        <h3 className="font-semibold text-slate-800 group-hover:text-blue-700 transition-colors">后台常量配置</h3>
+                        <p className="text-xs text-slate-500 font-normal mt-0.5">
+                            点击{isOpen ? '收起' : '展开'}以修改基准参数
+                        </p>
+                    </div>
                 </div>
-                {isOpen ? <ChevronUp size={20} className="text-slate-400" /> : <ChevronDown size={20} className="text-slate-400" />}
+                {isOpen ? <ChevronUp size={20} className="text-slate-400 group-hover:text-blue-500 transition-colors" /> : <ChevronDown size={20} className="text-slate-400 group-hover:text-blue-500 transition-colors" />}
             </button>
 
             {isOpen && (
@@ -55,7 +59,7 @@ export const WeavingConfiguration: React.FC<WeavingConfigurationProps> = ({
                                     type="number"
                                     value={localConfig.netFormationBenchmark}
                                     onChange={(e) => handleChange('netFormationBenchmark', parseFloat(e.target.value))}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all duration-200 outline-none"
                                 />
                             </div>
                             <div>

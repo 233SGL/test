@@ -13,15 +13,15 @@ export const WeavingResults: React.FC<WeavingResultsProps> = ({ result }) => {
         <div className="space-y-6">
             {/* 1. Bonus Pool Calculation Breakdown */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                <div className="flex items-center gap-2 mb-4">
-                    <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-yellow-50 border border-yellow-100 rounded-lg flex items-center justify-center shadow-sm">
                         <Coins className="text-yellow-600" size={20} />
                     </div>
                     <h3 className="font-semibold text-slate-800">奖金池计算详情</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                    <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-200/60 hover:border-slate-300 transition-colors">
                         <div className="text-sm text-slate-500 mb-1">成网率质量奖系数</div>
                         <div className="text-2xl font-bold text-slate-800">{result.qualityBonusCoef.toFixed(4)}</div>
                         <div className="text-xs text-slate-400 mt-2">
@@ -54,8 +54,8 @@ export const WeavingResults: React.FC<WeavingResultsProps> = ({ result }) => {
 
             {/* 2. Personnel Distribution */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                <div className="flex items-center gap-2 mb-4">
-                    <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center justify-center shadow-sm">
                         <Users className="text-indigo-600" size={20} />
                     </div>
                     <h3 className="font-semibold text-slate-800">人员积分分配</h3>
@@ -80,7 +80,8 @@ export const WeavingResults: React.FC<WeavingResultsProps> = ({ result }) => {
                                 const total = person.baseSalary + bonus; // Assuming full attendance for now
 
                                 return (
-                                    <tr key={person.name} className="hover:bg-slate-50">
+
+                                    <tr key={person.name} className="hover:bg-blue-50/30 transition-colors border-b border-slate-50 last:border-0">
                                         <td className="px-4 py-3 font-medium text-slate-900">{person.name}</td>
                                         <td className="px-4 py-3">
                                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${isLeader ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-800'

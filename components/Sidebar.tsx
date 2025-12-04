@@ -86,7 +86,7 @@ export const Sidebar = ({ isOpen, toggle }: { isOpen: boolean; toggle: () => voi
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 z-30 h-full w-64 bg-slate-900 text-slate-100 transition-transform duration-300 ease-in-out
+          fixed top-0 left-0 z-30 h-full w-64 bg-gradient-to-b from-slate-900 to-slate-950 text-slate-100 transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 lg:static flex flex-col shadow-xl
         `}
@@ -109,11 +109,14 @@ export const Sidebar = ({ isOpen, toggle }: { isOpen: boolean; toggle: () => voi
           </button>
         </div>
 
-        <div className="p-4 border-b border-slate-800">
-          <div className="flex items-center gap-3">
-            <img src={user?.avatar} alt="User" className="w-10 h-10 rounded-full border-2 border-slate-700" />
+        <div className="p-4 border-b border-slate-800/50 bg-slate-900/20">
+          <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800/30 transition-colors cursor-pointer group">
+            <div className="relative">
+              <img src={user?.avatar} alt="User" className="w-10 h-10 rounded-full border-2 border-slate-700 group-hover:border-accent/50 transition-colors" />
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full"></span>
+            </div>
             <div className="overflow-hidden">
-              <p className="font-medium text-sm truncate">{user?.name}</p>
+              <p className="font-medium text-sm truncate group-hover:text-white transition-colors">{user?.name}</p>
               <p className="text-xs text-slate-400 truncate">{role}</p>
             </div>
           </div>
@@ -147,10 +150,10 @@ export const Sidebar = ({ isOpen, toggle }: { isOpen: boolean; toggle: () => voi
                         to={item.to}
                         onClick={() => window.innerWidth < 1024 && toggle()}
                         className={({ isActive }) => `
-                          flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm
+                          flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm relative overflow-hidden
                           ${isActive
-                            ? 'bg-accent text-white shadow-md shadow-accent/20 font-medium translate-x-1'
-                            : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}
+                            ? 'bg-accent text-white shadow-lg shadow-accent/25 font-medium translate-x-1'
+                            : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 hover:translate-x-0.5'}
                         `}
                       >
                         <item.icon size={18} />
