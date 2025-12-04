@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { CalendarDays, AlertCircle, Wand2, Trash2 } from 'lucide-react';
 
 export const Attendance: React.FC = () => {
-    const { currentData, currentDate, setCurrentDate, updateDailyLog, autoFillAttendance, isSaving } = useData();
+    const { currentData, currentDate, setCurrentDate, updateDailyLog, autoFillAttendance, isSaving, employees } = useData();
     const { hasPermission } = useAuth();
 
     const canEdit = hasPermission('EDIT_HOURS');
@@ -23,6 +23,14 @@ export const Attendance: React.FC = () => {
 
     const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
+    // Filter out terminated employees
+    const activeRecords = useMemo(() => {
+        return currentData.records.filter(record => {
+            const emp = employees.find(e => e.id === record.employeeId);
+            return emp && emp.status !== 'terminated';
+        });
+    }, [currentData.records, employees]);
+
     // Helper to check if a day is weekend (Visual cue)
     const isWeekend = (d: number) => {
         const dayOfWeek = new Date(currentDate.year, currentDate.month - 1, d).getDay();
@@ -34,14 +42,13 @@ export const Attendance: React.FC = () => {
     };
 
     const handleAutoFill = () => {
-        if (confirm('确定要使用智能填充吗？\\n\\n- 将根据员工设定的"每日标准工时"填充所有空白。\\n- 周日将自动留空。\\n- 现有数据将被覆盖。')) {
+        if (confirm('确定要使用智能填充吗？\n\n- 将根据员工设定的"每日标准工时"填充所有空白。\n- 周日将自动留空。\n- 现有数据将被覆盖。')) {
             autoFillAttendance();
         }
     };
 
     const handleClearAll = () => {
-        if (confirm(' 确定要清除当月所有工时记录吗？\n\n此操作将清空所有员工的工时数据，不可恢复！')) {
-            // 清除所有员工的所有日期工时
+        if (confirm('⚠️ 确定要清除当月所有工时记录吗？\n\n此操作将清空所有员工的工时数据，不可恢复！')) {
             currentData.records.forEach(emp => {
                 daysArray.forEach(day => {
                     updateDailyLog(emp.employeeId, day, 0);
@@ -137,7 +144,7 @@ export const Attendance: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {currentData.records.map(emp => (
+                            {activeRecords.map(emp => (
                                 <tr key={emp.employeeId} className="hover:bg-slate-50 group">
                                     {/* Sticky Name Col */}
                                     <td className="sticky left-0 z-10 bg-white group-hover:bg-slate-50 px-4 py-2 border-r border-b border-slate-100 font-medium text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis w-[120px]">

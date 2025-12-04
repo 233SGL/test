@@ -385,7 +385,19 @@ export const Employees: React.FC = () => {
                                         >
                                             <Edit3 size={16} /> 详情/编辑
                                         </button>
-                                        {emp.status !== 'terminated' && (
+                                        {emp.status === 'terminated' ? (
+                                            <button
+                                                onClick={async () => {
+                                                    if (confirm(`确定要恢复 ${emp.name} 为在职状态吗？`)) {
+                                                        await updateEmployee({ ...emp, status: 'active' });
+                                                    }
+                                                }}
+                                                className="px-3 py-2 rounded-lg border border-green-100 hover:bg-green-50 text-green-600 transition-colors"
+                                                title="恢复在职"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></svg>
+                                            </button>
+                                        ) : (
                                             <button
                                                 onClick={() => handleDelete(emp)}
                                                 className="px-3 py-2 rounded-lg border border-red-100 hover:bg-red-50 text-red-500 transition-colors"
