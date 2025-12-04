@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { calculateSalary } from '../../services/calcService';
@@ -26,7 +26,7 @@ import {
 } from 'recharts';
 
 export const Simulation: React.FC = () => {
-  const { currentData, updateParams, settings } = useData();
+  const { currentData, updateParams, settings, employees } = useData();
   const { hasPermission } = useAuth();
   
   // Local Simulation State (detached from DB)
@@ -114,8 +114,8 @@ export const Simulation: React.FC = () => {
       ...currentData,
       params: simParams
   };
-  const result = calculateSalary(simulatedData);
-  const originalResult = calculateSalary(currentData);
+  const result = calculateSalary(simulatedData, employees);
+  const originalResult = calculateSalary(currentData, employees);
 
   // Handlers
   const handleParamChange = (key: keyof MonthlyParams, value: number) => {

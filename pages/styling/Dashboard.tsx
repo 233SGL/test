@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { useData } from '../../contexts/DataContext';
 import { calculateSalary } from '../../services/calcService';
 import { MetricCard } from '../../components/MetricCard';
@@ -6,8 +6,8 @@ import { Coins, Users, TrendingUp, Package } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export const Dashboard: React.FC = () => {
-  const { currentData, currentDate } = useData();
-  const result = calculateSalary(currentData);
+  const { currentData, currentDate, employees } = useData();
+  const result = calculateSalary(currentData, employees);
 
   const chartData = result.records.map(r => ({
     name: r.employeeName,

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+﻿import React, { useMemo } from 'react';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { calculateSalary } from '../../services/calcService';
@@ -9,7 +9,7 @@ export const SalaryCalculator: React.FC = () => {
   const { currentData, updateRecord, currentDate, setCurrentDate, resetMonthData } = useData();
   const { hasPermission } = useAuth();
   
-  const result = calculateSalary(currentData);
+  const result = calculateSalary(currentData, employees);
 
   const canEditHours = hasPermission('EDIT_HOURS');
   const canEditBase = hasPermission('EDIT_BASE_SCORE');
