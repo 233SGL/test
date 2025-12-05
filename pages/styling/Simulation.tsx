@@ -18,7 +18,10 @@ import {
   Calendar,
   AlertTriangle,
   PieChart as PieChartIcon,
-  ShieldAlert
+  ShieldAlert,
+  Trophy,
+  Package,
+  Award
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -26,7 +29,7 @@ import {
 } from 'recharts';
 
 export const Simulation: React.FC = () => {
-  const { currentData, updateParams, settings, employees } = useData();
+  const { currentData, updateParams, settings, employees, currentDate } = useData();
   const { hasPermission } = useAuth();
   
   // Local Simulation State (detached from DB)
@@ -178,8 +181,8 @@ export const Simulation: React.FC = () => {
   })).sort((a, b) => b.Total - a.Total);
 
   const pieData = [
-      { name: '基础分支出', value: Math.round(result.totalBasePayout), color: '#64748b' },
-      { name: '修正积分池支出', value: Math.round(result.bonusPool), color: '#3b82f6' }
+      { name: '基础分', value: Math.round(result.totalBasePayout), color: '#64748b' },
+      { name: '修正分', value: Math.round(result.bonusPool), color: '#3b82f6' }
   ];
 
   const SimulationControls = () => (
@@ -261,75 +264,203 @@ export const Simulation: React.FC = () => {
 
   // --- Slides ---
 
+  // 第一页：积分概览 - 简洁的数据卡片
   const SlideOverview = () => (
-      <div className="flex flex-col items-center justify-center h-full p-12 relative z-10 animate-fade-in">
-          <h2 className="text-4xl font-bold mb-16 text-blue-200 tracking-wider">本月积分概览</h2>
-          <div className="grid grid-cols-3 gap-12 w-full max-w-6xl">
-              <div className="bg-slate-800/60 backdrop-blur-md p-10 rounded-3xl text-center border border-slate-600/50 shadow-2xl">
-                  <div className="text-slate-400 mb-4 text-xl font-medium">总积分包</div>
-                  <div className="text-7xl font-bold text-blue-50 font-mono tracking-tight">
-                    ¥{Math.round(result.totalPool).toLocaleString()}
+      <div className="absolute inset-0 top-[100px] bottom-[72px] flex flex-col items-center justify-center px-[5%] animate-fade-in">
+          {/* 主标题 */}
+          <div className="mb-6 text-center">
+              <h2 className="text-4xl font-bold text-white tracking-wide mb-2">
+                  {currentDate.year}年{currentDate.month}月 积分概览
+              </h2>
+              <div className="h-1 w-24 bg-gradient-to-r from-blue-500 to-cyan-400 mx-auto rounded-full"></div>
+          </div>
+
+          {/* 核心指标 - 三个大卡片 */}
+          <div className="grid grid-cols-3 gap-8 w-full mb-6">
+              <div className="group relative overflow-hidden bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl p-8 rounded-2xl border border-slate-700/50 shadow-2xl hover:border-blue-500/50 transition-all duration-500">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all"></div>
+                  <div className="relative">
+                      <div className="text-slate-400 mb-2 text-sm font-medium flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+                          总积分包
+                      </div>
+                      <div className="text-5xl font-bold text-white font-mono tracking-tight leading-none mb-2">
+                          {Math.round(result.totalPool).toLocaleString()}
+                      </div>
+                      <div className="text-slate-500 text-sm">基础分 + 修正分</div>
                   </div>
               </div>
-              <div className="bg-slate-800/60 backdrop-blur-md p-10 rounded-3xl text-center border border-slate-600/50 shadow-2xl">
-                  <div className="text-slate-400 mb-4 text-xl font-medium">待分修正积分池</div>
-                  <div className="text-7xl font-bold text-emerald-400 font-mono tracking-tight">
-                    ¥{Math.round(result.bonusPool).toLocaleString()}
+              
+              <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-900/50 to-slate-900/90 backdrop-blur-xl p-8 rounded-2xl border border-emerald-700/40 shadow-2xl hover:border-emerald-500/50 transition-all duration-500">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all"></div>
+                  <div className="relative">
+                      <div className="text-emerald-400/90 mb-2 text-sm font-medium flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
+                          修正积分池
+                      </div>
+                      <div className="text-5xl font-bold text-emerald-400 font-mono tracking-tight leading-none mb-2">
+                          {Math.round(result.bonusPool).toLocaleString()}
+                      </div>
+                      <div className="text-slate-500 text-sm">待分配激励积分</div>
                   </div>
               </div>
-              <div className="bg-slate-800/60 backdrop-blur-md p-10 rounded-3xl text-center border border-slate-600/50 shadow-2xl">
-                  <div className="text-slate-400 mb-4 text-xl font-medium">平均积分</div>
-                  <div className="text-7xl font-bold text-amber-400 font-mono tracking-tight">
-                    ¥{Math.round(result.totalPool / (result.records.length || 1)).toLocaleString()}
+              
+              <div className="group relative overflow-hidden bg-gradient-to-br from-amber-900/50 to-slate-900/90 backdrop-blur-xl p-8 rounded-2xl border border-amber-700/40 shadow-2xl hover:border-amber-500/50 transition-all duration-500">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-all"></div>
+                  <div className="relative">
+                      <div className="text-amber-400/90 mb-2 text-sm font-medium flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-amber-400"></div>
+                          人均积分
+                      </div>
+                      <div className="text-5xl font-bold text-amber-400 font-mono tracking-tight leading-none mb-2">
+                          {Math.round(result.totalPool / (result.records.length || 1)).toLocaleString()}
+                      </div>
+                      <div className="text-slate-500 text-sm">参与人数: {result.records.length}</div>
                   </div>
               </div>
           </div>
-          <div className="mt-20 flex gap-24">
-              <div className="text-center">
-                  <div className="text-2xl text-slate-500 mb-2">本月入库量</div>
-                  <div className="text-5xl font-bold text-blue-100">{simParams.area.toLocaleString()} m²</div>
+
+          {/* 第二行指标 */}
+          <div className="grid grid-cols-4 gap-6 w-full mb-6">
+              <div className="p-5 bg-slate-800/60 rounded-xl border border-slate-700/50">
+                  <div className="text-slate-400 text-sm mb-2">基础分总计</div>
+                  <div className="text-3xl font-bold text-white font-mono">{Math.round(result.totalBasePayout).toLocaleString()}</div>
               </div>
-              <div className="text-center">
-                  <div className="text-2xl text-slate-500 mb-2">工时权重占比</div>
-                  <div className="text-5xl font-bold text-amber-500">{simParams.weightTime}%</div>
+              <div className="p-5 bg-slate-800/60 rounded-xl border border-slate-700/50">
+                  <div className="text-slate-400 text-sm mb-2">修正率</div>
+                  <div className="text-3xl font-bold text-blue-400 font-mono">{((result.bonusPool / result.totalPool) * 100).toFixed(1)}%</div>
+              </div>
+              <div className="p-5 bg-slate-800/60 rounded-xl border border-slate-700/50">
+                  <div className="text-slate-400 text-sm mb-2">单价系数</div>
+                  <div className="text-3xl font-bold text-white font-mono">{simParams.unitPrice}</div>
+              </div>
+              <div className="p-5 bg-slate-800/60 rounded-xl border border-slate-700/50">
+                  <div className="text-slate-400 text-sm mb-2">基础权重</div>
+                  <div className="text-3xl font-bold text-purple-400 font-mono">{simParams.weightBase}%</div>
+              </div>
+          </div>
+
+          {/* 底部参数面板 */}
+          <div className="grid grid-cols-3 gap-8 w-full">
+              <div className="flex items-center gap-4 p-5 bg-slate-800/60 rounded-xl border border-slate-700/50">
+                  <div className="w-14 h-14 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                      <Package className="text-blue-400 w-7 h-7" />
+                  </div>
+                  <div>
+                      <div className="text-slate-400 text-sm mb-1">本月入库量</div>
+                      <div className="text-2xl font-bold text-white font-mono">{simParams.area.toLocaleString()} <span className="text-slate-500 text-base">m²</span></div>
+                  </div>
+              </div>
+              <div className="flex items-center gap-4 p-5 bg-slate-800/60 rounded-xl border border-slate-700/50">
+                  <div className="w-14 h-14 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                      <Clock className="text-amber-400 w-7 h-7" />
+                  </div>
+                  <div>
+                      <div className="text-slate-400 text-sm mb-1">工时权重</div>
+                      <div className="text-2xl font-bold text-white font-mono">{simParams.weightTime}<span className="text-slate-500 text-base">%</span></div>
+                  </div>
+              </div>
+              <div className="flex items-center gap-4 p-5 bg-slate-800/60 rounded-xl border border-slate-700/50">
+                  <div className="w-14 h-14 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                      <TrendingUp className="text-emerald-400 w-7 h-7" />
+                  </div>
+                  <div>
+                      <div className="text-slate-400 text-sm mb-1">KPI得分</div>
+                      <div className="text-2xl font-bold text-white font-mono">{simParams.kpiScore} <span className="text-slate-500 text-base">分</span></div>
+                  </div>
               </div>
           </div>
       </div>
   );
 
-  const SlideLeaderboard = () => (
-      <div className="h-full p-12 flex flex-col pt-24 animate-fade-in">
-          <h2 className="text-5xl font-bold text-blue-200 mb-10 text-center flex items-center justify-center gap-4">
-              <TrendingUp className="text-red-400" size={48} /> 积分排行榜 TOP 10
-          </h2>
-                    <div className="flex-1 w-full max-w-7xl mx-auto bg-slate-800/60 backdrop-blur-md rounded-3xl shadow-2xl p-10 border border-slate-600/50" style={{height: 600}}>
-            <ResponsiveContainer width="100%" height={600}>
-                <BarChart data={chartData.slice(0, 10)} layout="vertical" margin={{ top: 10, right: 80, left: 80, bottom: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#475569" />
-                    <XAxis type="number" stroke="#94a3b8" hide />
-                    <YAxis dataKey="name" type="category" stroke="#cbd5e1" width={140} tick={{fontSize: 24, fontWeight: 'bold', fill: '#cbd5e1'}} />
-                    <Bar dataKey="Total" fill="#3b82f6" radius={[0, 8, 8, 0]} barSize={56} isAnimationActive={false}>
-                        <LabelList 
-                            dataKey="Total" 
-                            position="right" 
-                            fill="#93c5fd" 
-                            fontSize={24} 
-                            fontWeight="bold" 
-                            formatter={(val: number) => `¥${val}`} 
-                        />
-                        {chartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={index < 3 ? '#f43f5e' : '#3b82f6'} />
-                        ))}
-                    </Bar>
-                </BarChart>
-            </ResponsiveContainer>
+  // 第二页：排行榜 - 重点突出，全屏展示
+  const SlideLeaderboard = () => {
+      const top10 = chartData.slice(0, 10);
+      const maxScore = Math.max(...top10.map(d => d.Total));
+      
+      return (
+          <div className="absolute inset-0 top-[100px] bottom-[72px] flex flex-col px-[5%] py-[2%] animate-fade-in">
+              {/* 标题区 */}
+              <div className="text-center mb-[2%] shrink-0">
+                  <div className="inline-flex items-center gap-3 px-4 py-1.5 bg-gradient-to-r from-rose-600/20 via-rose-500/10 to-rose-600/20 rounded-full border border-rose-500/30 mb-2">
+                      <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
+                          <span className="text-rose-400 font-bold uppercase tracking-widest text-[0.7vw]">LIVE RANKING</span>
+                      </div>
+                  </div>
+                  <h2 className="text-[2.5vw] font-black text-white tracking-tight">
+                      积分排行榜 <span className="text-rose-500">TOP 10</span>
+                  </h2>
+              </div>
+
+              {/* 排行榜主体 */}
+              <div className="flex-1 grid grid-cols-2 gap-x-[2%] gap-y-[1.5%] max-w-[95%] mx-auto w-full content-center">
+                  {top10.map((item, index) => {
+                      const percentage = (item.Total / maxScore) * 100;
+                      const isTop3 = index < 3;
+                      const rankColors = ['from-amber-500 to-yellow-400', 'from-slate-400 to-slate-300', 'from-amber-700 to-amber-600'];
+                      const rankBg = ['bg-amber-500/20 border-amber-500/50', 'bg-slate-400/20 border-slate-400/50', 'bg-amber-700/20 border-amber-700/50'];
+                      
+                      return (
+                          <div 
+                              key={item.name}
+                              className={`relative flex items-center gap-[1vw] p-[0.8vw] rounded-xl transition-all duration-300 ${
+                                  isTop3 
+                                      ? 'bg-gradient-to-r from-slate-800/90 to-slate-800/60 border-2 ' + rankBg[index]
+                                      : 'bg-slate-800/40 border border-slate-700/30 hover:bg-slate-800/60'
+                              }`}
+                          >
+                              {/* 排名 */}
+                              <div className={`w-[2.8vw] h-[2.8vw] rounded-lg flex items-center justify-center font-black text-[1.3vw] shrink-0 ${
+                                  isTop3 
+                                      ? `bg-gradient-to-br ${rankColors[index]} text-slate-900 shadow-lg`
+                                      : 'bg-slate-700/50 text-slate-400'
+                              }`}>
+                                  {index + 1}
+                              </div>
+                              
+                              {/* 信息区 */}
+                              <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between mb-1">
+                                      <span className={`font-bold text-[1vw] truncate ${isTop3 ? 'text-white' : 'text-slate-200'}`}>
+                                          {item.name}
+                                      </span>
+                                      <span className={`font-mono font-black text-[1.1vw] ${
+                                          isTop3 ? 'text-white' : 'text-blue-400'
+                                      }`}>
+                                          {item.Total.toLocaleString()}
+                                      </span>
+                                  </div>
+                                  {/* 进度条 */}
+                                  <div className="h-[0.4vw] bg-slate-700/50 rounded-full overflow-hidden">
+                                      <div 
+                                          className={`h-full rounded-full transition-all duration-1000 ${
+                                              isTop3 
+                                                  ? `bg-gradient-to-r ${rankColors[index]}`
+                                                  : 'bg-gradient-to-r from-blue-600 to-blue-400'
+                                          }`}
+                                          style={{ width: `${percentage}%` }}
+                                      />
+                                  </div>
+                              </div>
+
+                              {/* TOP3 特殊标记 */}
+                              {isTop3 && (
+                                  <div className="absolute -top-1 -right-1">
+                                      <Award className={`w-[1.2vw] h-[1.2vw] ${index === 0 ? 'text-amber-400' : index === 1 ? 'text-slate-300' : 'text-amber-600'}`} />
+                                  </div>
+                              )}
+                          </div>
+                      );
+                  })}
+              </div>
           </div>
-      </div>
-  );
+      );
+  };
 
   const renderCustomPieLabel = ({ cx, cy, midAngle, outerRadius, value, name, percent }: any) => {
     const RADIAN = Math.PI / 180;
-    const radius = outerRadius + 50; 
+    const radius = outerRadius + 80; // 增加标签偏移距离
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
@@ -337,69 +468,104 @@ export const Simulation: React.FC = () => {
         <text 
             x={x} 
             y={y} 
-            fill="#93c5fd"
+            fill="#e2e8f0"
             textAnchor={x > cx ? 'start' : 'end'} 
             dominantBaseline="central"
-            className="text-2xl font-bold"
+            fontSize={16}
+            fontWeight="bold"
         >
             {`${name} ${(percent * 100).toFixed(0)}%`}
         </text>
     );
   };
 
+  // 第三页：积分结构分析 - 饼图 + 侧边信息
   const SlideDistribution = () => (
-      <div className="h-full p-12 flex flex-col pt-24 animate-fade-in">
-          <h2 className="text-5xl font-bold text-blue-200 mb-12 text-center flex items-center justify-center gap-4">
-              <PieChartIcon size={48} className="text-blue-400"/> 资金分配结构分析
-          </h2>
-          <div className="flex-1 flex items-center justify-center gap-20">
-              <div className="w-1/2" style={{height: 600}}>
-                  <ResponsiveContainer width="100%" height={600}>
+      <div className="absolute inset-0 top-[100px] bottom-[72px] flex flex-col px-[5%] py-6 animate-fade-in">
+          {/* 标题 */}
+          <div className="text-center mb-6 shrink-0">
+              <h2 className="text-3xl font-bold text-white tracking-tight flex items-center justify-center gap-3">
+                  <PieChartIcon className="text-blue-400 w-8 h-8"/> 
+                  积分结构分析
+              </h2>
+          </div>
+          
+          <div className="flex-1 flex items-center justify-center gap-12">
+              {/* 左侧：饼图 - 容器要足够大以容纳标签 */}
+              <div className="relative flex items-center justify-center" style={{ width: '600px', height: '400px' }}>
+                  <div className="absolute inset-0 bg-blue-500/10 rounded-full blur-3xl"></div>
+                  <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                           <Pie
                             data={pieData}
                             cx="50%"
                             cy="50%"
-                            labelLine={{ stroke: '#64748b', strokeWidth: 2 }}
+                            labelLine={{ stroke: '#94a3b8', strokeWidth: 2, strokeDasharray: '3 3' }}
                             label={renderCustomPieLabel}
-                            outerRadius={160} 
+                            innerRadius={60}
+                            outerRadius={110} 
                             fill="#8884d8"
                             dataKey="value"
                             isAnimationActive={false}
+                            strokeWidth={0}
                           >
                             {pieData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} stroke="rgba(0,0,0,0)" />
+                                <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
                           </Pie>
                       </PieChart>
                   </ResponsiveContainer>
-              </div>
-              <div className="w-1/3 space-y-8">
-                  {/* Card 1 */}
-                  <div className="p-8 bg-slate-800/60 rounded-2xl border border-slate-600/50 shadow-sm backdrop-blur-md">
-                      <h4 className="font-bold text-slate-400 mb-4 text-2xl">模拟参数设定</h4>
-                      <ul className="space-y-6 text-2xl">
-                          <li className="flex justify-between border-b border-slate-600/50 pb-3">
-                              <span className="text-slate-400">入库量</span>
-                              <span className="font-mono font-bold text-blue-200">{simParams.area.toLocaleString()}</span>
-                          </li>
-                          <li className="flex justify-between border-b border-slate-600/50 pb-3">
-                              <span className="text-slate-400">单价</span>
-                              <span className="font-mono font-bold text-blue-200">{simParams.unitPrice}</span>
-                          </li>
-                          <li className="flex justify-between pb-3">
-                              <span className="text-slate-400">KPI得分</span>
-                              <span className="font-mono font-bold text-blue-200">{simParams.kpiScore}</span>
-                          </li>
-                      </ul>
-                  </div>
-                  {/* Card 2 */}
-                  <div className="p-8 bg-blue-900/30 rounded-2xl border border-blue-700/50 shadow-sm backdrop-blur-md">
-                      <h4 className="font-bold text-blue-300 mb-2 text-2xl">预计总支出</h4>
-                      <div className="text-6xl font-bold text-blue-400 mb-4 font-mono">
-                          ¥{Math.round(result.totalPool).toLocaleString()}
+                  {/* 中心数字 */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                          <div className="text-5xl font-black text-white font-mono">
+                              {Math.round(result.totalPool).toLocaleString()}
+                          </div>
+                          <div className="text-slate-400 text-base">总积分</div>
                       </div>
-                      <div className="text-xl text-blue-300">包含基础分与修正积分池</div>
+                  </div>
+              </div>
+
+              {/* 右侧：信息卡片 - 固定宽度 */}
+              <div className="w-[380px] space-y-6 shrink-0">
+                  {/* 积分构成 */}
+                  <div className="p-6 bg-slate-800/70 rounded-2xl border border-slate-700">
+                      <h4 className="font-bold text-white mb-5 text-lg">积分构成</h4>
+                      <div className="space-y-4">
+                          <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                  <div className="w-5 h-5 rounded-full bg-slate-500"></div>
+                                  <span className="text-slate-300 text-lg">基础分</span>
+                              </div>
+                              <span className="font-mono font-bold text-white text-2xl">{Math.round(result.totalBasePayout).toLocaleString()}</span>
+                          </div>
+                          <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                  <div className="w-5 h-5 rounded-full bg-blue-500"></div>
+                                  <span className="text-slate-300 text-lg">修正分</span>
+                              </div>
+                              <span className="font-mono font-bold text-blue-400 text-2xl">{Math.round(result.bonusPool).toLocaleString()}</span>
+                          </div>
+                      </div>
+                  </div>
+
+                  {/* 本月参数 */}
+                  <div className="p-6 bg-slate-800/70 rounded-2xl border border-slate-700">
+                      <h4 className="font-bold text-white mb-5 text-lg">本月参数</h4>
+                      <div className="space-y-4">
+                          <div className="flex justify-between items-center pb-4 border-b border-slate-700">
+                              <span className="text-slate-400 text-base">入库量</span>
+                              <span className="font-mono font-bold text-white text-xl">{simParams.area.toLocaleString()} m²</span>
+                          </div>
+                          <div className="flex justify-between items-center pb-4 border-b border-slate-700">
+                              <span className="text-slate-400 text-base">单价系数</span>
+                              <span className="font-mono font-bold text-white text-xl">{simParams.unitPrice}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                              <span className="text-slate-400 text-base">KPI得分</span>
+                              <span className="font-mono font-bold text-emerald-400 text-xl">{simParams.kpiScore} 分</span>
+                          </div>
+                      </div>
                   </div>
               </div>
           </div>
@@ -410,7 +576,7 @@ export const Simulation: React.FC = () => {
   // --- Main View (Non-Fullscreen) ---
   if (!isFullscreen) {
       return (
-        <div className="space-y-6 pb-12">
+        <div className="space-y-6 pb-12 animate-fade-in-up">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800">模拟沙箱</h1>
@@ -550,20 +716,32 @@ export const Simulation: React.FC = () => {
                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/20 via-slate-900 to-slate-900 -z-10"></div>
 
               <div 
-                className={`absolute inset-0 transition-all duration-1000 ease-in-out ${slideIndex === 0 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
-                style={{ willChange: 'opacity' }}
+                className={`absolute inset-0 transition-all duration-700 ease-out ${
+                  slideIndex === 0 
+                    ? 'opacity-100 z-10 translate-x-0 scale-100' 
+                    : 'opacity-0 z-0 pointer-events-none translate-x-8 scale-[0.98]'
+                }`}
+                style={{ willChange: 'opacity, transform' }}
               >
                 <SlideOverview />
               </div>
               <div 
-                className={`absolute inset-0 transition-all duration-1000 ease-in-out ${slideIndex === 1 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
-                style={{ willChange: 'opacity' }}
+                className={`absolute inset-0 transition-all duration-700 ease-out ${
+                  slideIndex === 1 
+                    ? 'opacity-100 z-10 translate-x-0 scale-100' 
+                    : 'opacity-0 z-0 pointer-events-none translate-x-8 scale-[0.98]'
+                }`}
+                style={{ willChange: 'opacity, transform' }}
               >
                 <SlideLeaderboard />
               </div>
               <div 
-                className={`absolute inset-0 transition-all duration-1000 ease-in-out ${slideIndex === 2 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
-                style={{ willChange: 'opacity' }}
+                className={`absolute inset-0 transition-all duration-700 ease-out ${
+                  slideIndex === 2 
+                    ? 'opacity-100 z-10 translate-x-0 scale-100' 
+                    : 'opacity-0 z-0 pointer-events-none translate-x-8 scale-[0.98]'
+                }`}
+                style={{ willChange: 'opacity, transform' }}
               >
                 <SlideDistribution />
               </div>
