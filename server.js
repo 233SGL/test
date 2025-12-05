@@ -68,7 +68,24 @@ app.get('/api/health', async (req, res) => {
 app.get('/api/employees', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM employees ORDER BY id');
-    res.json(rows);
+    // 转换数据库字段名为驼峰命名
+    const employees = rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      gender: row.gender,
+      workshopId: row.workshop_id,
+      department: row.department,
+      position: row.position,
+      joinDate: row.join_date,
+      standardBaseScore: parseFloat(row.standard_base_score) || 0,
+      status: row.status,
+      phone: row.phone,
+      expectedDailyHours: parseFloat(row.expected_daily_hours) || 12,
+      machineId: row.machine_id,
+      baseSalary: parseFloat(row.base_salary) || 0,
+      coefficient: parseFloat(row.coefficient) || 1.0
+    }));
+    res.json(employees);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -77,13 +94,13 @@ app.get('/api/employees', async (req, res) => {
 /**
  * POST /api/employees
  * 创建新员工
- * @body {id, name, gender, workshopId, department, position, joinDate, standardBaseScore, status, phone, expectedDailyHours}
+ * @body {id, name, gender, workshopId, department, position, joinDate, standardBaseScore, status, phone, expectedDailyHours, baseSalary, coefficient}
  */
 app.post('/api/employees', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'INSERT INTO employees (id, name, gender, workshop_id, department, position, join_date, standard_base_score, status, phone, expected_daily_hours) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
-      [req.body.id, req.body.name, req.body.gender, req.body.workshopId, req.body.department, req.body.position, req.body.joinDate, req.body.standardBaseScore, req.body.status, req.body.phone, req.body.expectedDailyHours]
+      'INSERT INTO employees (id, name, gender, workshop_id, department, position, join_date, standard_base_score, status, phone, expected_daily_hours, base_salary, coefficient) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *',
+      [req.body.id, req.body.name, req.body.gender, req.body.workshopId, req.body.department, req.body.position, req.body.joinDate, req.body.standardBaseScore, req.body.status, req.body.phone, req.body.expectedDailyHours, req.body.baseSalary || 0, req.body.coefficient || 1.0]
     );
     res.json(rows[0]);
   } catch (error) {
@@ -94,8 +111,8 @@ app.post('/api/employees', async (req, res) => {
 app.put('/api/employees/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'UPDATE employees SET name=$2, gender=$3, workshop_id=$4, department=$5, position=$6, join_date=$7, standard_base_score=$8, status=$9, phone=$10, expected_daily_hours=$11 WHERE id=$1 RETURNING *',
-      [req.params.id, req.body.name, req.body.gender, req.body.workshopId, req.body.department, req.body.position, req.body.joinDate, req.body.standardBaseScore, req.body.status, req.body.phone, req.body.expectedDailyHours]
+      'UPDATE employees SET name=$2, gender=$3, workshop_id=$4, department=$5, position=$6, join_date=$7, standard_base_score=$8, status=$9, phone=$10, expected_daily_hours=$11, base_salary=$12, coefficient=$13 WHERE id=$1 RETURNING *',
+      [req.params.id, req.body.name, req.body.gender, req.body.workshopId, req.body.department, req.body.position, req.body.joinDate, req.body.standardBaseScore, req.body.status, req.body.phone, req.body.expectedDailyHours, req.body.baseSalary || 0, req.body.coefficient || 1.0]
     );
     res.json(rows[0]);
   } catch (error) {
@@ -320,7 +337,6 @@ app.get('/api/weaving/employees', async (req, res) => {
       phone: row.phone,
       status: row.status,
       notes: row.notes,
-      attendanceDays: parseInt(row.attendance_days) || 0,
       machineId: row.machine_id,
       team: row.team
     }));
@@ -362,16 +378,16 @@ app.put('/api/weaving/employees/:id', async (req, res) => {
   try {
     const {
       name, gender, position, baseSalary, coefficient,
-      joinDate, phone, status, notes, attendanceDays, machineId, team
+      joinDate, phone, status, notes, machineId, team
     } = req.body;
 
     const { rows } = await pool.query(
       `UPDATE weaving_employees SET
         name = $2, gender = $3, position = $4, base_salary = $5, coefficient = $6,
-        join_date = $7, phone = $8, status = $9, notes = $10, attendance_days = $11,
-        machine_id = $12, team = $13
+        join_date = $7, phone = $8, status = $9, notes = $10,
+        machine_id = $11, team = $12
        WHERE id = $1 RETURNING *`,
-      [req.params.id, name, gender, position, baseSalary, coefficient, joinDate, phone, status, notes, attendanceDays, machineId, team]
+      [req.params.id, name, gender, position, baseSalary, coefficient, joinDate, phone, status, notes, machineId, team]
     );
     if (!rows[0]) return res.status(404).json({ error: '员工不存在' });
     res.json(rows[0]);
@@ -409,6 +425,8 @@ app.get('/api/weaving/machines', async (req, res) => {
       name: row.name,
       speedType: row.speed_type,
       width: parseFloat(row.width),
+      effectiveWidth: parseFloat(row.effective_width) || 7.7,
+      speedWeftPerMin: parseInt(row.speed_weft_per_min) || 41,
       targetOutput: parseFloat(row.target_output),
       status: row.status
     }));
@@ -589,12 +607,308 @@ app.get('/api/weaving/monthly-data', async (req, res) => {
 });
 
 // ========================================
-// 织造工段机台月度产量记录 API
+// 织造工段产品/网种管理 API
+// ========================================
+
+/**
+ * GET /api/weaving/products
+ * 获取所有网种/产品
+ */
+app.get('/api/weaving/products', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM weaving_products ORDER BY id');
+    const products = rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      weftDensity: parseFloat(row.weft_density),
+      description: row.description,
+      isActive: row.is_active,
+      createdAt: row.created_at
+    }));
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/weaving/products
+ * 创建新网种/产品
+ */
+app.post('/api/weaving/products', async (req, res) => {
+  try {
+    const { id, name, weftDensity, description, isActive } = req.body;
+    const { rows } = await pool.query(
+      `INSERT INTO weaving_products (id, name, weft_density, description, is_active)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [id, name, weftDensity, description, isActive !== false]
+    );
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * PUT /api/weaving/products/:id
+ * 更新网种/产品信息
+ */
+app.put('/api/weaving/products/:id', async (req, res) => {
+  try {
+    const { name, weftDensity, description, isActive } = req.body;
+    const { rows } = await pool.query(
+      `UPDATE weaving_products SET name = $2, weft_density = $3, description = $4, is_active = $5
+       WHERE id = $1 RETURNING *`,
+      [req.params.id, name, weftDensity, description, isActive]
+    );
+    if (!rows[0]) return res.status(404).json({ error: '产品不存在' });
+    res.json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/weaving/products/:id
+ * 删除网种/产品
+ */
+app.delete('/api/weaving/products/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM weaving_products WHERE id = $1', [req.params.id]);
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========================================
+// 织造工段生产记录 API（核心：每张网一条记录）
+// ========================================
+
+/**
+ * GET /api/weaving/production-records
+ * 获取生产记录，支持筛选
+ * @query year - 年份（必填）
+ * @query month - 月份（必填）
+ * @query machineId - 机台筛选（可选）
+ * @query productId - 产品筛选（可选）
+ */
+app.get('/api/weaving/production-records', async (req, res) => {
+  try {
+    const { year, month, machineId, productId } = req.query;
+    
+    let query = 'SELECT * FROM weaving_production_records WHERE year = $1 AND month = $2';
+    const params = [year, month];
+    
+    if (machineId) {
+      params.push(machineId);
+      query += ` AND machine_id = $${params.length}`;
+    }
+    if (productId) {
+      params.push(productId);
+      query += ` AND product_id = $${params.length}`;
+    }
+    
+    query += ' ORDER BY production_date DESC, id DESC';
+    
+    const { rows } = await pool.query(query, params);
+    const records = rows.map(row => ({
+      id: row.id,
+      year: row.year,
+      month: row.month,
+      productionDate: row.production_date,
+      machineId: row.machine_id,
+      productId: row.product_id,
+      length: parseFloat(row.length),
+      machineWidth: parseFloat(row.machine_width),
+      weftDensity: parseFloat(row.weft_density),
+      speedType: row.speed_type,
+      actualArea: parseFloat(row.actual_area),
+      outputCoef: parseFloat(row.output_coef),
+      widthCoef: parseFloat(row.width_coef),
+      speedCoef: parseFloat(row.speed_coef),
+      equivalentOutput: parseFloat(row.equivalent_output),
+      startTime: row.start_time,
+      endTime: row.end_time,
+      qualityGrade: row.quality_grade,
+      isQualified: row.is_qualified,
+      notes: row.notes,
+      createdAt: row.created_at
+    }));
+    res.json(records);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/weaving/production-records
+ * 新增生产记录（触发器会自动计算等效产量）
+ */
+app.post('/api/weaving/production-records', async (req, res) => {
+  try {
+    const {
+      productionDate, machineId, productId, length,
+      startTime, endTime, qualityGrade, isQualified, notes
+    } = req.body;
+    
+    // 从日期提取年月
+    const date = new Date(productionDate);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    
+    const { rows } = await pool.query(
+      `INSERT INTO weaving_production_records 
+        (year, month, production_date, machine_id, product_id, length, start_time, end_time, quality_grade, is_qualified, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+      [year, month, productionDate, machineId, productId, length, startTime || null, endTime || null, qualityGrade || 'A', isQualified !== false, notes]
+    );
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * PUT /api/weaving/production-records/:id
+ * 更新生产记录
+ */
+app.put('/api/weaving/production-records/:id', async (req, res) => {
+  try {
+    const {
+      productionDate, machineId, productId, length,
+      startTime, endTime, qualityGrade, isQualified, notes
+    } = req.body;
+    
+    const date = new Date(productionDate);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    
+    const { rows } = await pool.query(
+      `UPDATE weaving_production_records SET
+        year = $2, month = $3, production_date = $4, machine_id = $5, product_id = $6,
+        length = $7, start_time = $8, end_time = $9, quality_grade = $10, is_qualified = $11, notes = $12
+       WHERE id = $1 RETURNING *`,
+      [req.params.id, year, month, productionDate, machineId, productId, length, startTime || null, endTime || null, qualityGrade, isQualified, notes]
+    );
+    if (!rows[0]) return res.status(404).json({ error: '记录不存在' });
+    res.json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/weaving/production-records/:id
+ * 删除生产记录
+ */
+app.delete('/api/weaving/production-records/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM weaving_production_records WHERE id = $1', [req.params.id]);
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========================================
+// 织造工段月度汇总 API
+// ========================================
+
+/**
+ * GET /api/weaving/monthly-summary/:year/:month
+ * 获取指定月份的汇总数据（从生产记录聚合）
+ */
+app.get('/api/weaving/monthly-summary/:year/:month', async (req, res) => {
+  try {
+    const { year, month } = req.params;
+    
+    // 从生产记录聚合数据
+    const { rows } = await pool.query(`
+      SELECT 
+        COUNT(*) as total_nets,
+        COALESCE(SUM(length), 0) as total_length,
+        COALESCE(SUM(actual_area), 0) as total_area,
+        COALESCE(SUM(equivalent_output), 0) as total_equivalent,
+        COUNT(*) FILTER (WHERE is_qualified) as qualified_nets
+      FROM weaving_production_records
+      WHERE year = $1 AND month = $2
+    `, [year, month]);
+    
+    const summary = rows[0];
+    const netFormationRate = summary.total_nets > 0 
+      ? (summary.qualified_nets / summary.total_nets * 100).toFixed(2)
+      : 0;
+    
+    // 获取活跃机台数
+    const machineResult = await pool.query(
+      "SELECT COUNT(*) as count FROM weaving_machines WHERE status = 'running'"
+    );
+    
+    // 获取操作工人数
+    const operatorResult = await pool.query(
+      "SELECT COUNT(*) as count FROM weaving_employees WHERE position = 'operator' AND status = 'active'"
+    );
+    
+    res.json({
+      year: parseInt(year),
+      month: parseInt(month),
+      totalNets: parseInt(summary.total_nets),
+      totalLength: parseFloat(summary.total_length),
+      totalArea: parseFloat(summary.total_area),
+      equivalentOutput: parseFloat(summary.total_equivalent),
+      qualifiedNets: parseInt(summary.qualified_nets),
+      netFormationRate: parseFloat(netFormationRate),
+      activeMachines: parseInt(machineResult.rows[0].count),
+      actualOperators: parseInt(operatorResult.rows[0].count)
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/weaving/machine-summary/:year/:month
+ * 获取指定月份各机台汇总数据
+ */
+app.get('/api/weaving/machine-summary/:year/:month', async (req, res) => {
+  try {
+    const { year, month } = req.params;
+    
+    const { rows } = await pool.query(`
+      SELECT 
+        machine_id,
+        COUNT(*) as net_count,
+        SUM(length) as total_length,
+        SUM(actual_area) as total_area,
+        SUM(equivalent_output) as total_equivalent
+      FROM weaving_production_records
+      WHERE year = $1 AND month = $2
+      GROUP BY machine_id
+      ORDER BY machine_id
+    `, [year, month]);
+    
+    const summary = rows.map(row => ({
+      machineId: row.machine_id,
+      netCount: parseInt(row.net_count),
+      totalLength: parseFloat(row.total_length),
+      totalArea: parseFloat(row.total_area),
+      totalEquivalent: parseFloat(row.total_equivalent)
+    }));
+    
+    res.json(summary);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========================================
+// 旧版 API（保留兼容性）
 // ========================================
 
 /**
  * GET /api/weaving/machine-records/:year/:month
- * 获取指定月份的机台产量记录
+ * 获取指定月份的机台产量记录（旧版兼容）
  */
 app.get('/api/weaving/machine-records/:year/:month', async (req, res) => {
   try {
@@ -613,13 +927,18 @@ app.get('/api/weaving/machine-records/:year/:month', async (req, res) => {
     }));
     res.json(records);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    // 如果旧表不存在，返回空数组
+    if (error.message.includes('does not exist')) {
+      res.json([]);
+    } else {
+      res.status(500).json({ error: error.message });
+    }
   }
 });
 
 /**
  * POST /api/weaving/machine-records
- * 批量保存机台产量记录
+ * 批量保存机台产量记录（旧版兼容）
  */
 app.post('/api/weaving/machine-records', async (req, res) => {
   try {

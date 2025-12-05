@@ -197,7 +197,7 @@ export async function fetchWeavingMonthlyHistory(): Promise<WeavingMonthlyDataIn
 }
 
 // ========================================
-// 机台月度产量记录 API
+// 机台月度产量记录 API（旧版兼容）
 // ========================================
 
 /**
@@ -223,4 +223,230 @@ export async function saveMachineRecords(year: number, month: number, records: M
   if (!response.ok) {
     throw new Error('保存机台产量记录失败');
   }
+}
+
+// ========================================
+// 产品/网种管理 API
+// ========================================
+
+/**
+ * 产品/网种接口
+ */
+export interface WeavingProduct {
+  id: string;
+  name: string;
+  weftDensity: number;
+  description?: string;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+/**
+ * 获取所有产品/网种
+ */
+export async function fetchWeavingProducts(): Promise<WeavingProduct[]> {
+  const response = await fetch(`${API_BASE}/products`);
+  if (!response.ok) {
+    throw new Error('获取产品列表失败');
+  }
+  return response.json();
+}
+
+/**
+ * 创建产品/网种
+ */
+export async function createWeavingProduct(product: Omit<WeavingProduct, 'createdAt'>): Promise<WeavingProduct> {
+  const response = await fetch(`${API_BASE}/products`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(product)
+  });
+  if (!response.ok) {
+    throw new Error('创建产品失败');
+  }
+  return response.json();
+}
+
+/**
+ * 更新产品/网种
+ */
+export async function updateWeavingProduct(id: string, product: Partial<WeavingProduct>): Promise<WeavingProduct> {
+  const response = await fetch(`${API_BASE}/products/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(product)
+  });
+  if (!response.ok) {
+    throw new Error('更新产品失败');
+  }
+  return response.json();
+}
+
+/**
+ * 删除产品/网种
+ */
+export async function deleteWeavingProduct(id: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/products/${id}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) {
+    throw new Error('删除产品失败');
+  }
+}
+
+// ========================================
+// 生产记录 API（核心：每张网一条记录）
+// ========================================
+
+/**
+ * 生产记录接口
+ */
+export interface WeavingProductionRecord {
+  id?: number;
+  year?: number;
+  month?: number;
+  productionDate: string;
+  machineId: string;
+  productId?: string;
+  length: number;
+  // 自动计算字段
+  machineWidth?: number;
+  weftDensity?: number;
+  speedType?: 'H2' | 'H5';
+  actualArea?: number;
+  outputCoef?: number;
+  widthCoef?: number;
+  speedCoef?: number;
+  equivalentOutput?: number;
+  // 时间记录
+  startTime?: string;
+  endTime?: string;
+  // 质量信息
+  qualityGrade?: 'A' | 'B' | 'C';
+  isQualified?: boolean;
+  notes?: string;
+  createdAt?: string;
+}
+
+/**
+ * 生产记录查询参数
+ */
+export interface ProductionRecordQuery {
+  year: number;
+  month: number;
+  machineId?: string;
+  productId?: string;
+}
+
+/**
+ * 获取生产记录
+ */
+export async function fetchProductionRecords(query: ProductionRecordQuery): Promise<WeavingProductionRecord[]> {
+  const params = new URLSearchParams({
+    year: String(query.year),
+    month: String(query.month)
+  });
+  if (query.machineId) params.append('machineId', query.machineId);
+  if (query.productId) params.append('productId', query.productId);
+  
+  const response = await fetch(`${API_BASE}/production-records?${params}`);
+  if (!response.ok) {
+    throw new Error('获取生产记录失败');
+  }
+  return response.json();
+}
+
+/**
+ * 创建生产记录
+ */
+export async function createProductionRecord(record: Omit<WeavingProductionRecord, 'id' | 'createdAt'>): Promise<WeavingProductionRecord> {
+  const response = await fetch(`${API_BASE}/production-records`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(record)
+  });
+  if (!response.ok) {
+    throw new Error('创建生产记录失败');
+  }
+  return response.json();
+}
+
+/**
+ * 更新生产记录
+ */
+export async function updateProductionRecord(id: number, record: Partial<WeavingProductionRecord>): Promise<WeavingProductionRecord> {
+  const response = await fetch(`${API_BASE}/production-records/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(record)
+  });
+  if (!response.ok) {
+    throw new Error('更新生产记录失败');
+  }
+  return response.json();
+}
+
+/**
+ * 删除生产记录
+ */
+export async function deleteProductionRecord(id: number): Promise<void> {
+  const response = await fetch(`${API_BASE}/production-records/${id}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) {
+    throw new Error('删除生产记录失败');
+  }
+}
+
+// ========================================
+// 月度汇总 API（新版：从生产记录聚合）
+// ========================================
+
+/**
+ * 月度汇总接口
+ */
+export interface WeavingMonthlySummary {
+  year: number;
+  month: number;
+  totalNets: number;
+  totalLength: number;
+  totalArea: number;
+  equivalentOutput: number;
+  qualifiedNets: number;
+  netFormationRate: number;
+  activeMachines: number;
+  actualOperators: number;
+}
+
+/**
+ * 机台月度汇总
+ */
+export interface WeavingMachineSummary {
+  machineId: string;
+  netCount: number;
+  totalLength: number;
+  totalArea: number;
+  totalEquivalent: number;
+}
+
+/**
+ * 获取月度汇总数据
+ */
+export async function fetchMonthlySummary(year: number, month: number): Promise<WeavingMonthlySummary> {
+  const response = await fetch(`${API_BASE}/monthly-summary/${year}/${month}`);
+  if (!response.ok) {
+    throw new Error('获取月度汇总失败');
+  }
+  return response.json();
+}
+
+/**
+ * 获取各机台月度汇总
+ */
+export async function fetchMachineSummary(year: number, month: number): Promise<WeavingMachineSummary[]> {
+  const response = await fetch(`${API_BASE}/machine-summary/${year}/${month}`);
+  if (!response.ok) {
+    throw new Error('获取机台汇总失败');
+  }
+  return response.json();
 }

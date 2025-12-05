@@ -12,19 +12,19 @@
 -- ========================================
 -- 1. 织造工段员工表
 -- ========================================
+-- 注意：织造工段不使用基础分概念，与定型工段不同
 CREATE TABLE IF NOT EXISTS weaving_employees (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     gender TEXT CHECK (gender IN ('male', 'female')),
     position TEXT NOT NULL CHECK (position IN ('admin_leader', 'admin_member', 'operator')),
-    base_salary NUMERIC DEFAULT 0,
-    coefficient NUMERIC DEFAULT 1.0,
+    coefficient NUMERIC DEFAULT 1.0,      -- 分配系数（用于奖金二次分配）
     join_date DATE,
     phone TEXT,
     status TEXT DEFAULT 'active' CHECK (status IN ('active', 'probation', 'leave', 'terminated')),
     notes TEXT,
-    -- 操作工专用字段
-    machine_id TEXT,  -- 分配的机台号 (H1-H11)
+    -- 机台分配: NULL=未分配, 'admin'=管理员, 'H1'-'H11'=具体机台
+    machine_id TEXT,
     team TEXT,        -- 班组（一班、二班等）
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -128,6 +128,8 @@ CREATE TABLE IF NOT EXISTS weaving_production_records (
     year INTEGER NOT NULL,
     month INTEGER NOT NULL,
     production_date DATE NOT NULL,       -- 完成日期
+    start_time TIMESTAMP WITH TIME ZONE, -- 开始织造时间
+    end_time TIMESTAMP WITH TIME ZONE,   -- 结束织造时间
     -- 关联信息
     machine_id TEXT NOT NULL REFERENCES weaving_machines(id),
     product_id TEXT REFERENCES weaving_products(id),
@@ -234,10 +236,10 @@ INSERT INTO weaving_products (id, name, weft_density, description) VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- 插入管理员班组人员
-INSERT INTO weaving_employees (id, name, gender, position, base_salary, coefficient, join_date, status) VALUES
-    ('w1', '耿志友', 'male', 'admin_leader', 3500, 1.3, '2020-01-01', 'active'),
-    ('w2', '赵红林', 'male', 'admin_member', 2500, 1.0, '2020-03-15', 'active'),
-    ('w3', '夏旺潮', 'male', 'admin_member', 2500, 1.0, '2021-06-01', 'active')
+INSERT INTO weaving_employees (id, name, gender, position, coefficient, join_date, status, machine_id) VALUES
+    ('w1', '耿志友', 'male', 'admin_leader', 1.3, '2020-01-01', 'active', 'admin'),
+    ('w2', '赵红林', 'male', 'admin_member', 1.0, '2020-03-15', 'active', 'admin'),
+    ('w3', '夏旺潮', 'male', 'admin_member', 1.0, '2021-06-01', 'active', 'admin')
 ON CONFLICT (id) DO NOTHING;
 
 -- ========================================
