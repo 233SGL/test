@@ -41,7 +41,7 @@ export const Sidebar = ({ isOpen, toggle }: { isOpen: boolean; toggle: () => voi
       icon: Layers,
       visible: hasScope('styling'),
       items: [
-        { icon: LayoutDashboard, label: '数据大盘', to: '/', visible: hasPermission('VIEW_DASHBOARD') },
+        { icon: LayoutDashboard, label: '数据大盘', to: '/dashboard', visible: hasPermission('VIEW_DASHBOARD') },
         { icon: Factory, label: '生产录入', to: '/production-data', visible: hasPermission('VIEW_PRODUCTION') },
         { icon: CalendarDays, label: '每日工时', to: '/attendance', visible: hasPermission('VIEW_ATTENDANCE') },
         { icon: Calculator, label: '积分计算', to: '/calculator', visible: hasPermission('VIEW_CALCULATOR') },
@@ -55,7 +55,7 @@ export const Sidebar = ({ isOpen, toggle }: { isOpen: boolean; toggle: () => voi
       icon: Grid3X3,
       visible: hasScope('weaving'),
       items: [
-        { icon: LayoutDashboard, label: '工段总览', to: '/weaving', visible: true },
+        { icon: LayoutDashboard, label: '工段总览', to: '/weaving', visible: true, end: true },
         { icon: Database, label: '数据录入', to: '/weaving/data-entry', visible: hasPermission('VIEW_WEAVING_DATA_ENTRY') },
         { icon: Calculator, label: '积分计算', to: '/weaving/calculator', visible: hasPermission('VIEW_WEAVING_CALCULATOR') },
         { icon: Settings, label: '工段配置', to: '/weaving/config', visible: hasPermission('VIEW_WEAVING_CONFIG') },
@@ -150,6 +150,7 @@ export const Sidebar = ({ isOpen, toggle }: { isOpen: boolean; toggle: () => voi
                       <NavLink
                         key={item.to}
                         to={item.to}
+                        end={item.end}
                         onClick={() => window.innerWidth < 1024 && toggle()}
                         className={({ isActive }) => `
                           flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm relative overflow-hidden
