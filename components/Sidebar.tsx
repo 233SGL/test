@@ -16,7 +16,13 @@ import {
   Grid3X3,
   Server,
   MonitorPlay,
-  Megaphone
+  Megaphone,
+  PlusCircle,
+  FileText,
+  TrendingUp,
+  DollarSign,
+  Cog,
+  Package
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
@@ -55,19 +61,21 @@ export const Sidebar = ({ isOpen, toggle }: { isOpen: boolean; toggle: () => voi
       icon: Grid3X3,
       visible: hasScope('weaving'),
       items: [
-        { icon: LayoutDashboard, label: '工段总览', to: '/weaving', visible: true, end: true },
-        { icon: Database, label: '数据录入', to: '/weaving/data-entry', visible: hasPermission('VIEW_WEAVING_DATA_ENTRY') },
-        { icon: Calculator, label: '积分计算', to: '/weaving/calculator', visible: hasPermission('VIEW_WEAVING_CALCULATOR') },
-        { icon: Settings, label: '工段配置', to: '/weaving/config', visible: hasPermission('VIEW_WEAVING_CONFIG') },
+        { icon: TrendingUp, label: '月度汇总', to: '/weaving', visible: hasPermission('VIEW_WEAVING_SUMMARY'), end: true },
+        { icon: PlusCircle, label: '生产录入', to: '/weaving/entry', visible: hasPermission('VIEW_WEAVING_PRODUCTION') },
+        { icon: FileText, label: '生产记录', to: '/weaving/records', visible: hasPermission('VIEW_WEAVING_RECORDS') },
+        { icon: DollarSign, label: '奖金核算', to: '/weaving/bonus', visible: hasPermission('VIEW_WEAVING_BONUS') },
+        { icon: Cog, label: '机台管理', to: '/weaving/machines', visible: hasPermission('VIEW_WEAVING_MACHINES') },
+        { icon: Package, label: '网种管理', to: '/weaving/products', visible: hasPermission('VIEW_WEAVING_PRODUCTS') },
       ]
     },
     {
       id: 'system',
       title: '系统管理',
       icon: Server,
-      visible: hasPermission('VIEW_EMPLOYEES') || hasPermission('MANAGE_SYSTEM'),
+      visible: hasPermission('VIEW_EMPLOYEES') || hasPermission('MANAGE_EMPLOYEES') || hasPermission('MANAGE_SYSTEM'),
       items: [
-        { icon: Users, label: '员工档案', to: '/employees', visible: hasPermission('VIEW_EMPLOYEES') },
+        { icon: Users, label: '员工档案', to: '/employees', visible: hasPermission('VIEW_EMPLOYEES') || hasPermission('MANAGE_EMPLOYEES') },
         { icon: Settings, label: '全局设置', to: '/settings', visible: hasPermission('MANAGE_SYSTEM') },
       ]
     }

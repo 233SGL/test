@@ -33,6 +33,7 @@ export function convertOldPermissionsToNew(oldPermissions: Permission[], scopes:
      * 将旧的 VIEW_* 权限映射到新的 PageType
      */
     const pageMapping: Record<string, PageType> = {
+        // 定型工段页面
         'VIEW_DASHBOARD': 'dashboard',
         'VIEW_PRODUCTION': 'production',
         'VIEW_ATTENDANCE': 'attendance',
@@ -42,9 +43,12 @@ export function convertOldPermissionsToNew(oldPermissions: Permission[], scopes:
         'MANAGE_SYSTEM': 'settings',
         'MANAGE_ANNOUNCEMENTS': 'announcements',
         // 织造工段页面
-        'VIEW_WEAVING_DATA_ENTRY': 'production',
-        'VIEW_WEAVING_CALCULATOR': 'calculator',
-        'VIEW_WEAVING_CONFIG': 'config',
+        'VIEW_WEAVING_PRODUCTION': 'weaving_production',
+        'VIEW_WEAVING_RECORDS': 'weaving_records',
+        'VIEW_WEAVING_SUMMARY': 'weaving_summary',
+        'VIEW_WEAVING_BONUS': 'weaving_bonus',
+        'VIEW_WEAVING_MACHINES': 'weaving_machines',
+        'VIEW_WEAVING_PRODUCTS': 'weaving_products',
     };
 
     /**
@@ -52,6 +56,7 @@ export function convertOldPermissionsToNew(oldPermissions: Permission[], scopes:
      * 将旧的 EDIT_xxx / MANAGE_xxx 权限映射到新的 EditPermission
      */
     const editMapping: Record<string, EditPermission> = {
+        // 定型工段编辑权限
         'EDIT_YIELD': 'edit_production_data',
         'EDIT_UNIT_PRICE': 'edit_production_data',
         'EDIT_FIXED_PACK': 'edit_production_data',
@@ -63,7 +68,10 @@ export function convertOldPermissionsToNew(oldPermissions: Permission[], scopes:
         'MANAGE_EMPLOYEES': 'manage_employees',
         'MANAGE_ANNOUNCEMENTS': 'manage_announcements',
         'MANAGE_SYSTEM': 'manage_system',
-        'EDIT_WEAVING_MONTHLY_DATA': 'edit_production_data',
+        // 织造工段编辑权限
+        'EDIT_WEAVING_PRODUCTION': 'edit_production_data',
+        'EDIT_WEAVING_MACHINES': 'edit_config',
+        'EDIT_WEAVING_PRODUCTS': 'edit_config',
         'EDIT_WEAVING_CONFIG': 'edit_config',
     };
 
@@ -92,7 +100,8 @@ export function convertOldPermissionsToNew(oldPermissions: Permission[], scopes:
  * @returns 路由路径，如果该页面在指定工段不存在则返回 null
  */
 export function getPageRoute(page: PageType, workshop: WorkshopScope): string | null {
-    const routeMapping: Record<PageType, Record<WorkshopScope, string | null>> = {
+    const routeMapping: Record<string, Record<WorkshopScope, string | null>> = {
+        // 定型工段页面
         'dashboard': {
             'styling': '/dashboard',
             'weaving': '/weaving',
@@ -100,34 +109,66 @@ export function getPageRoute(page: PageType, workshop: WorkshopScope): string | 
         },
         'production': {
             'styling': '/production-data',
-            'weaving': '/weaving/data-entry',
+            'weaving': '/weaving/entry',
             'all': '/production-data',
         },
         'calculator': {
             'styling': '/calculator',
-            'weaving': '/weaving/calculator',
+            'weaving': '/weaving/bonus',
             'all': '/calculator',
         },
         'attendance': {
             'styling': '/attendance',
-            'weaving': null,  // 织造无此页面
+            'weaving': null,
             'all': '/attendance',
         },
         'simulation': {
             'styling': '/simulation',
-            'weaving': null,  // 织造无此页面
+            'weaving': null,
             'all': '/simulation',
         },
         'config': {
             'styling': '/styling-settings',
-            'weaving': '/weaving/config',
+            'weaving': '/weaving/machines',
             'all': '/styling-settings',
         },
         'announcements': {
             'styling': '/styling-settings',
-            'weaving': null,  // 织造公告待实现
+            'weaving': null,
             'all': '/styling-settings',
         },
+        // 织造工段专有页面
+        'weaving_production': {
+            'styling': null,
+            'weaving': '/weaving/entry',
+            'all': '/weaving/entry',
+        },
+        'weaving_records': {
+            'styling': null,
+            'weaving': '/weaving/records',
+            'all': '/weaving/records',
+        },
+        'weaving_summary': {
+            'styling': null,
+            'weaving': '/weaving',
+            'all': '/weaving',
+        },
+        'weaving_bonus': {
+            'styling': null,
+            'weaving': '/weaving/bonus',
+            'all': '/weaving/bonus',
+        },
+        'weaving_machines': {
+            'styling': null,
+            'weaving': '/weaving/machines',
+            'all': '/weaving/machines',
+        },
+        'weaving_products': {
+            'styling': null,
+            'weaving': '/weaving/products',
+            'all': '/weaving/products',
+        },
+        // 系统页面
         'employees': {
             'styling': '/employees',
             'weaving': '/employees',
@@ -160,6 +201,12 @@ export function pageExistsInWorkshop(page: PageType, workshop: WorkshopScope): b
 
     // 定型专有页面
     if ((page === 'attendance' || page === 'simulation' || page === 'announcements') && workshop !== 'styling') {
+        return false;
+    }
+
+    // 织造专有页面
+    const weavingPages = ['weaving_production', 'weaving_records', 'weaving_summary', 'weaving_bonus', 'weaving_machines', 'weaving_products'];
+    if (weavingPages.includes(page) && workshop !== 'weaving') {
         return false;
     }
 

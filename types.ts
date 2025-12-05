@@ -68,6 +68,13 @@ export type PageType =
   | 'simulation'       // 模拟沙箱（仅定型）
   | 'config'           // 工段配置
   | 'announcements'    // 工段公告
+  // 织造工段专有页面
+  | 'weaving_production'  // 织造生产录入
+  | 'weaving_records'     // 织造生产记录
+  | 'weaving_summary'     // 织造月度汇总
+  | 'weaving_bonus'       // 织造奖金计算
+  | 'weaving_machines'    // 织造机台管理
+  | 'weaving_products'    // 织造网种管理
   // 系统页面（不受工段限制）
   | 'employees'        // 员工档案
   | 'settings';        // 系统设置
@@ -133,52 +140,56 @@ export type Permission =
 
   // --- Weaving Section (织造工段) ---
   // 页面访问权限
-  | 'VIEW_WEAVING_DATA_ENTRY'   // 查看织造数据录入页
-  | 'VIEW_WEAVING_CALCULATOR'   // 查看织造积分计算页
-  | 'VIEW_WEAVING_EMPLOYEES'    // 查看织造人员档案页
-  | 'VIEW_WEAVING_CONFIG'       // 查看织造工段配置页
+  | 'VIEW_WEAVING_PRODUCTION'      // 查看织造生产录入页
+  | 'VIEW_WEAVING_RECORDS'         // 查看织造生产记录页
+  | 'VIEW_WEAVING_SUMMARY'         // 查看织造月度汇总页
+  | 'VIEW_WEAVING_BONUS'           // 查看织造奖金计算页
+  | 'VIEW_WEAVING_MACHINES'        // 查看织造机台管理页
+  | 'VIEW_WEAVING_PRODUCTS'        // 查看织造网种管理页
   // 操作权限
-  | 'EDIT_WEAVING_MONTHLY_DATA' // 编辑织造月度数据
-  | 'EDIT_WEAVING_CONFIG'       // 编辑织造配置参数
-  | 'MANAGE_WEAVING_EMPLOYEES'; // 管理织造人员档案
+  | 'EDIT_WEAVING_PRODUCTION'      // 编辑织造生产记录
+  | 'EDIT_WEAVING_MACHINES'        // 编辑织造机台配置
+  | 'EDIT_WEAVING_PRODUCTS'        // 编辑织造网种配置
+  | 'EDIT_WEAVING_CONFIG';         // 编辑织造工段配置
 
 export const PERMISSION_LIST: { key: Permission, label: string, category: string }[] = [
-  // 1. Page Access
-  { key: 'VIEW_DASHBOARD', label: '查看数据大盘', category: '页面访问权限' },
-  { key: 'VIEW_PRODUCTION', label: '查看生产录入页', category: '页面访问权限' },
-  { key: 'VIEW_ATTENDANCE', label: '查看每日工时页', category: '页面访问权限' },
-  { key: 'VIEW_CALCULATOR', label: '查看积分计算页', category: '页面访问权限' },
-  { key: 'VIEW_SIMULATION', label: '查看模拟沙箱页', category: '页面访问权限' },
-  { key: 'VIEW_EMPLOYEES', label: '查看员工档案页', category: '页面访问权限' },
+  // 1. Page Access (定型工段)
+  { key: 'VIEW_DASHBOARD', label: '查看数据大盘', category: '定型工段 - 页面访问' },
+  { key: 'VIEW_PRODUCTION', label: '查看生产录入页', category: '定型工段 - 页面访问' },
+  { key: 'VIEW_ATTENDANCE', label: '查看每日工时页', category: '定型工段 - 页面访问' },
+  { key: 'VIEW_CALCULATOR', label: '查看积分计算页', category: '定型工段 - 页面访问' },
+  { key: 'VIEW_SIMULATION', label: '查看模拟沙箱页', category: '定型工段 - 页面访问' },
+  { key: 'VIEW_EMPLOYEES', label: '查看员工档案页', category: '定型工段 - 页面访问' },
 
-  // 2. Production Data
-  { key: 'EDIT_YIELD', label: '录入产量 (入库量)', category: '生产数据管理' },
-  { key: 'EDIT_UNIT_PRICE', label: '调整单价', category: '生产数据管理' },
-  { key: 'EDIT_FIXED_PACK', label: '调整固定积分包', category: '生产数据管理' },
-  { key: 'EDIT_KPI', label: '调整 KPI', category: '生产数据管理' },
-  { key: 'EDIT_HOURS', label: '修改每日工时', category: '生产数据管理' },
+  // 2. Production Data (定型工段)
+  { key: 'EDIT_YIELD', label: '录入产量 (入库量)', category: '定型工段 - 数据编辑' },
+  { key: 'EDIT_UNIT_PRICE', label: '调整单价', category: '定型工段 - 数据编辑' },
+  { key: 'EDIT_FIXED_PACK', label: '调整固定积分包', category: '定型工段 - 数据编辑' },
+  { key: 'EDIT_KPI', label: '调整 KPI', category: '定型工段 - 数据编辑' },
+  { key: 'EDIT_HOURS', label: '修改每日工时', category: '定型工段 - 数据编辑' },
+  { key: 'EDIT_BASE_SCORE', label: '评定员工基础分', category: '定型工段 - 数据编辑' },
+  { key: 'EDIT_WEIGHTS', label: '调节分配权重', category: '定型工段 - 数据编辑' },
+  { key: 'APPLY_SIMULATION', label: '应用模拟结果到生产', category: '定型工段 - 数据编辑' },
+  { key: 'VIEW_SENSITIVE', label: '查看敏感积分数据', category: '定型工段 - 数据编辑' },
 
-  // 3. Salary & Strategy
-  { key: 'EDIT_BASE_SCORE', label: '评定员工基础分', category: '积分策略管理' },
-  { key: 'EDIT_WEIGHTS', label: '调节分配权重', category: '积分策略管理' },
-  { key: 'APPLY_SIMULATION', label: '应用模拟结果到生产', category: '积分策略管理' },
-  { key: 'VIEW_SENSITIVE', label: '查看敏感积分数据', category: '积分策略管理' },
+  // 3. Weaving Section Page Access (织造工段)
+  { key: 'VIEW_WEAVING_PRODUCTION', label: '查看生产录入页', category: '织造工段 - 页面访问' },
+  { key: 'VIEW_WEAVING_RECORDS', label: '查看生产记录页', category: '织造工段 - 页面访问' },
+  { key: 'VIEW_WEAVING_SUMMARY', label: '查看月度汇总页', category: '织造工段 - 页面访问' },
+  { key: 'VIEW_WEAVING_BONUS', label: '查看奖金计算页', category: '织造工段 - 页面访问' },
+  { key: 'VIEW_WEAVING_MACHINES', label: '查看机台管理页', category: '织造工段 - 页面访问' },
+  { key: 'VIEW_WEAVING_PRODUCTS', label: '查看网种管理页', category: '织造工段 - 页面访问' },
 
-  // 4. System Admin
-  { key: 'MANAGE_ANNOUNCEMENTS', label: '发布车间公告', category: '系统高级管理' },
-  { key: 'MANAGE_EMPLOYEES', label: '员工档案增删改', category: '系统高级管理' },
-  { key: 'MANAGE_SYSTEM', label: '系统设置与用户管理', category: '系统高级管理' },
+  // 4. Weaving Section Operations (织造工段)
+  { key: 'EDIT_WEAVING_PRODUCTION', label: '编辑生产记录', category: '织造工段 - 数据编辑' },
+  { key: 'EDIT_WEAVING_MACHINES', label: '编辑机台配置', category: '织造工段 - 数据编辑' },
+  { key: 'EDIT_WEAVING_PRODUCTS', label: '编辑网种配置', category: '织造工段 - 数据编辑' },
+  { key: 'EDIT_WEAVING_CONFIG', label: '编辑工段配置', category: '织造工段 - 数据编辑' },
 
-  // 5. Weaving Section Page Access
-  { key: 'VIEW_WEAVING_DATA_ENTRY', label: '查看织造数据录入', category: '织造工段访问' },
-  { key: 'VIEW_WEAVING_CALCULATOR', label: '查看织造积分计算', category: '织造工段访问' },
-  { key: 'VIEW_WEAVING_EMPLOYEES', label: '查看织造人员档案', category: '织造工段访问' },
-  { key: 'VIEW_WEAVING_CONFIG', label: '查看织造工段配置', category: '织造工段访问' },
-
-  // 6. Weaving Section Operations
-  { key: 'EDIT_WEAVING_MONTHLY_DATA', label: '编辑织造月度数据', category: '织造工段管理' },
-  { key: 'EDIT_WEAVING_CONFIG', label: '编辑织造工段配置', category: '织造工段管理' },
-  { key: 'MANAGE_WEAVING_EMPLOYEES', label: '管理织造人员档案', category: '织造工段管理' },
+  // 5. System Admin
+  { key: 'MANAGE_ANNOUNCEMENTS', label: '发布车间公告', category: '系统管理' },
+  { key: 'MANAGE_EMPLOYEES', label: '员工档案增删改', category: '系统管理' },
+  { key: 'MANAGE_SYSTEM', label: '系统设置与用户管理', category: '系统管理' },
 ];
 
 /**
@@ -246,7 +257,7 @@ export interface Employee {
   phone?: string;
   /** 身份证号（可选） */
   idCard?: string;
-  /** 标准基础分（用于积分计算） */
+  /** 标准基础分（用于积分计算，定型工段使用） */
   standardBaseScore: number;
   /** 在职状态 */
   status: EmployeeStatus;
@@ -254,8 +265,12 @@ export interface Employee {
   notes?: string;
   /** 预期每日工时（小时，用于考勤计算） */
   expectedDailyHours?: number;
-  /** 织造工段专用：分配的机台号 (H1-H11) */
+  /** 织造工段专用：分配的机台号 (H1-H11) 或 'admin' (管理员) */
   machineId?: string;
+  /** 织造工段专用：奖金分配系数 */
+  coefficient?: number;
+  /** 织造工段专用：基本工资 */
+  baseSalary?: number;
 }
 
 export interface SalaryRecord {

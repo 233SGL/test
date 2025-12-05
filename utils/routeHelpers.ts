@@ -19,14 +19,23 @@
 export const getDefaultRoute = (permissions: string[]): string => {
     // 路由和对应所需权限的映射列表（按优先级排序）
     const routes = [
-        { path: '/dashboard', permission: 'VIEW_DASHBOARD' },      // 数据大盘
-        { path: '/production-data', permission: 'VIEW_PRODUCTION' }, // 生产数据
-        { path: '/attendance', permission: 'VIEW_ATTENDANCE' },    // 每日工时
-        { path: '/calculator', permission: 'VIEW_CALCULATOR' },    // 积分计算
-        { path: '/simulation', permission: 'VIEW_SIMULATION' },    // 模拟沙箱
-        { path: '/weaving', permission: 'VIEW_DASHBOARD' },        // 织造工段（复用VIEW_DASHBOARD权限）
-        { path: '/employees', permission: 'VIEW_EMPLOYEES' },      // 员工档案
-        { path: '/settings', permission: 'MANAGE_SYSTEM' },        // 系统设置
+        // 定型工段路由
+        { path: '/dashboard', permission: 'VIEW_DASHBOARD' },
+        { path: '/production-data', permission: 'VIEW_PRODUCTION' },
+        { path: '/attendance', permission: 'VIEW_ATTENDANCE' },
+        { path: '/calculator', permission: 'VIEW_CALCULATOR' },
+        { path: '/simulation', permission: 'VIEW_SIMULATION' },
+        // 织造工段路由（与 App.tsx 中的路由路径一致）
+        { path: '/weaving/entry', permission: 'VIEW_WEAVING_PRODUCTION' },
+        { path: '/weaving/records', permission: 'VIEW_WEAVING_RECORDS' },
+        { path: '/weaving', permission: 'VIEW_WEAVING_SUMMARY' },
+        { path: '/weaving/bonus', permission: 'VIEW_WEAVING_BONUS' },
+        { path: '/weaving/machines', permission: 'VIEW_WEAVING_MACHINES' },
+        { path: '/weaving/products', permission: 'VIEW_WEAVING_PRODUCTS' },
+        // 系统页面
+        { path: '/employees', permission: 'VIEW_EMPLOYEES' },
+        { path: '/employees', permission: 'MANAGE_EMPLOYEES' },
+        { path: '/settings', permission: 'MANAGE_SYSTEM' },
     ];
 
     // 查找用户有权限访问的第一个路由
