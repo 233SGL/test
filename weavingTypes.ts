@@ -140,16 +140,6 @@ export const DEFAULT_WEAVING_CONFIG: WeavingConfig = {
     memberBaseSalary: 2500,           // 班员底薪 2500 积分
 };
 
-/**
- * 管理员班组初始人员名单
- * 织造工段管理员班组的默认人员配置
- */
-export const INITIAL_ADMIN_TEAM = [
-    { name: '耕志友', role: '班长', baseSalary: 3500 },
-    { name: '赵红林', role: '班员', baseSalary: 2500 },
-    { name: '夏旺潮', role: '班员', baseSalary: 2500 },
-];
-
 // ========================================
 // 织造工段人员档案类型
 // ========================================
@@ -161,11 +151,41 @@ export type EmployeeStatus = 'active' | 'probation' | 'leave' | 'terminated';
 
 /**
  * 织造工段岗位类型
- * - operator: 操作工（负责机台操作）
- * - leader: 班长（管理员班负责人）
- * - member: 班员（管理员班普通成员）
+ * - admin_leader: 管理员班长（参与奖金分配，系数1.3）
+ * - admin_member: 管理员班员（参与奖金分配，系数1.0）
+ * - operator: 操作工（负责机台操作，不参与管理员奖金分配）
  */
-export type WeavingPosition = 'operator' | 'leader' | 'member';
+export type WeavingPosition = 'admin_leader' | 'admin_member' | 'operator';
+
+/**
+ * 织造工段岗位配置
+ * 定义各岗位的名称、系数和底薪
+ */
+export const WEAVING_POSITION_CONFIG: Record<WeavingPosition, {
+    label: string;
+    coefficient: number;
+    baseSalary: number;
+    description: string;
+}> = {
+    admin_leader: {
+        label: '管理员班长',
+        coefficient: 1.3,
+        baseSalary: 3500,
+        description: '管理员班负责人，参与奖金二次分配'
+    },
+    admin_member: {
+        label: '管理员班员',
+        coefficient: 1.0,
+        baseSalary: 2500,
+        description: '管理员班普通成员，参与奖金二次分配'
+    },
+    operator: {
+        label: '操作工',
+        coefficient: 0,
+        baseSalary: 0,
+        description: '负责机台操作，薪酬另行计算'
+    }
+};
 
 /**
  * 织造工段员工信息接口
@@ -178,13 +198,11 @@ export interface WeavingEmployee {
     name: string;
     /** 性别 */
     gender: 'male' | 'female';
-    /** 分配的机台号 (H1-H11) */
-    machineId: string;
     /** 岗位类型 */
     position: WeavingPosition;
-    /** 底薪（积分） */
+    /** 底薪（积分），根据岗位自动设置 */
     baseSalary: number;
-    /** 分配系数（班长1.3，班员1.0，操作工根据考核） */
+    /** 分配系数（班长1.3，班员1.0，操作工0） */
     coefficient: number;
     /** 入职日期 */
     joinDate: string;
@@ -194,7 +212,52 @@ export interface WeavingEmployee {
     status: EmployeeStatus;
     /** 备注信息（可选） */
     notes?: string;
+    /** 出勤天数（当月） */
+    attendanceDays?: number;
+    
+    // ========== 操作工专用字段 ==========
+    /** 分配的机台号 (H1-H11)，仅操作工需要 */
+    machineId?: string;
+    /** 班组（如：一班、二班），仅操作工需要 */
+    team?: string;
 }
+
+/**
+ * 管理员班组初始人员名单
+ * 织造工段管理员班组的默认人员配置
+ */
+export const INITIAL_ADMIN_TEAM: WeavingEmployee[] = [
+    { 
+        id: 'w1', 
+        name: '耿志友', 
+        gender: 'male',
+        position: 'admin_leader', 
+        baseSalary: 3500, 
+        coefficient: 1.3,
+        joinDate: '2020-01-01',
+        status: 'active'
+    },
+    { 
+        id: 'w2', 
+        name: '赵红林', 
+        gender: 'male',
+        position: 'admin_member', 
+        baseSalary: 2500, 
+        coefficient: 1.0,
+        joinDate: '2020-03-15',
+        status: 'active'
+    },
+    { 
+        id: 'w3', 
+        name: '夏旺潮', 
+        gender: 'male',
+        position: 'admin_member', 
+        baseSalary: 2500, 
+        coefficient: 1.0,
+        joinDate: '2021-06-01',
+        status: 'active'
+    },
+];
 
 /**
  * 织造机台信息接口
@@ -213,6 +276,8 @@ export interface WeavingMachine {
     targetOutput: number;
     /** 分配到该机台的员工ID列表 */
     assignedEmployees: string[];
+    /** 机台状态 */
+    status: 'running' | 'maintenance' | 'idle';
 }
 
 /**
@@ -220,15 +285,51 @@ export interface WeavingMachine {
  * 织造工段所有机台的默认配置
  */
 export const DEFAULT_MACHINES: WeavingMachine[] = [
-    { id: 'H1', name: '1号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [] },
-    { id: 'H2', name: '2号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [] },
-    { id: 'H3', name: '3号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [] },
-    { id: 'H4', name: '4号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [] },
-    { id: 'H5', name: '5号机', speedType: 'H5', width: 4.25, targetOutput: 3600, assignedEmployees: [] },
-    { id: 'H6', name: '6号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [] },
-    { id: 'H7', name: '7号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [] },
-    { id: 'H8', name: '8号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [] },
-    { id: 'H9', name: '9号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [] },
-    { id: 'H10', name: '10号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [] },
-    { id: 'H11', name: '11号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [] },
+    { id: 'H1', name: '1号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [], status: 'running' },
+    { id: 'H2', name: '2号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [], status: 'running' },
+    { id: 'H3', name: '3号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [], status: 'running' },
+    { id: 'H4', name: '4号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [], status: 'running' },
+    { id: 'H5', name: '5号机', speedType: 'H5', width: 4.25, targetOutput: 3600, assignedEmployees: [], status: 'running' },
+    { id: 'H6', name: '6号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [], status: 'running' },
+    { id: 'H7', name: '7号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [], status: 'running' },
+    { id: 'H8', name: '8号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [], status: 'running' },
+    { id: 'H9', name: '9号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [], status: 'running' },
+    { id: 'H10', name: '10号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [], status: 'running' },
+    { id: 'H11', name: '11号机', speedType: 'H2', width: 8.5, targetOutput: 6450, assignedEmployees: [], status: 'running' },
 ];
+
+// ========================================
+// 织造工段月度数据类型
+// ========================================
+
+/**
+ * 机台月度产量记录
+ */
+export interface MachineMonthlyRecord {
+    /** 机台编号 */
+    machineId: string;
+    /** 实际产量（平方米） */
+    actualOutput: number;
+    /** 产品纬密 */
+    weftDensity: number;
+    /** 等效产量（计算得出） */
+    equivalentOutput: number;
+}
+
+/**
+ * 织造工段月度完整数据
+ */
+export interface WeavingMonthlyFullData {
+    /** 年份 */
+    year: number;
+    /** 月份 */
+    month: number;
+    /** 基础指标 */
+    metrics: WeavingMonthlyData;
+    /** 各机台产量明细 */
+    machineRecords: MachineMonthlyRecord[];
+    /** 员工出勤记录 */
+    attendanceRecords: Record<string, number>;
+    /** 计算结果快照 */
+    calculationSnapshot?: WeavingCalculationResult;
+}
