@@ -27,9 +27,9 @@ interface Machine {
   id: string;
   name: string;
   speedType: 'H2' | 'H5';
-  loomWidth: number;      // 织机宽度（数据记录，不参与计算）
   width: number;          // 织造宽度（用于计算）
-  speedWeftPerMin: number;
+  effectiveWidth?: number; // 有效幅宽（可选）
+  speedWeftPerMin?: number; // 速度（可选）
   targetOutput: number;
   status: 'running' | 'threading' | 'maintenance' | 'idle';
 }
@@ -199,9 +199,9 @@ const EditModal: React.FC<EditModalProps> = ({ machine, onClose, onSave }) => {
       setForm({
         name: machine.name,
         speedType: machine.speedType,
-        loomWidth: machine.loomWidth || machine.width,
+        loomWidth: machine.width,
         width: machine.width,
-        speedWeftPerMin: machine.speedWeftPerMin,
+        speedWeftPerMin: machine.speedWeftPerMin || 0,
         targetOutput: machine.targetOutput
       });
     }
@@ -339,11 +339,22 @@ export const MachineManagement: React.FC = () => {
 
   // 更新状态
   const handleStatusChange = async (machineId: string, status: Machine['status']) => {
+    const machine = machines.find(m => m.id === machineId);
+    if (!machine) return;
+    
     try {
-      await updateMachine(machineId, { status });
+      // 传递完整的机台数据
+      await updateMachine(machineId, { 
+        name: machine.name,
+        speedType: machine.speedType,
+        width: machine.width,
+        targetOutput: machine.targetOutput,
+        status 
+      });
       setMachines(prev => prev.map(m => m.id === machineId ? { ...m, status } : m));
-    } catch {
-      // 本地更新
+    } catch (err) {
+      console.error('更新状态失败:', err);
+      // 仍然本地更新以保持UI响应
       setMachines(prev => prev.map(m => m.id === machineId ? { ...m, status } : m));
     }
   };

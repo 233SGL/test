@@ -125,7 +125,7 @@ export const WeavingDashboard = () => {
 
     // 人员积分柱状图数据
     const staffChartData = INITIAL_ADMIN_TEAM.map(person => {
-        const isLeader = person.role === '班长';
+        const isLeader = person.position === 'admin_leader';
         const bonus = isLeader ? result.leaderBonus : result.memberBonus;
         return {
             name: person.name,
@@ -472,7 +472,7 @@ export const WeavingDashboard = () => {
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {INITIAL_ADMIN_TEAM.map((person) => {
-                                            const isLeader = person.role === '班长';
+                                            const isLeader = person.position === 'admin_leader';
                                             const bonus = isLeader ? result.leaderBonus : result.memberBonus;
                                             const total = person.baseSalary + bonus;
 
@@ -485,7 +485,7 @@ export const WeavingDashboard = () => {
                                                                 ? 'bg-violet-100 text-violet-800' 
                                                                 : 'bg-slate-100 text-slate-700'
                                                         }`}>
-                                                            {person.role}
+                                                            {isLeader ? '班长' : '班员'}
                                                         </span>
                                                     </td>
                                                     <td className="py-3 px-4 text-center text-slate-600 tabular-nums">
