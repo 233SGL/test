@@ -22,6 +22,7 @@ export const Login: React.FC = () => {
     const [selectedUser, setSelectedUser] = useState<SystemUser | null>(null);
     const [pinInput, setPinInput] = useState('');
     const [error, setError] = useState('');
+    const [failedAttempts, setFailedAttempts] = useState(0);
 
     // Pre-connect DB on load
     useEffect(() => {
@@ -40,6 +41,7 @@ export const Login: React.FC = () => {
         setSelectedUser(u);
         setPinInput('');
         setError('');
+        setFailedAttempts(0);
     };
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -47,11 +49,23 @@ export const Login: React.FC = () => {
         if (!selectedUser) return;
 
         if (pinInput === selectedUser.pinCode) {
-            login(selectedUser);
+            // 检查是否有任何权限
             const defaultRoute = getDefaultRoute(selectedUser.permissions);
+            if (defaultRoute === '/login') {
+                setError('此账号无任何权限，请联系管理员');
+                setFailedAttempts(0);
+                return;
+            }
+            login(selectedUser);
             navigate(defaultRoute);
         } else {
-            setError('PIN 码错误');
+            const newAttempts = failedAttempts + 1;
+            setFailedAttempts(newAttempts);
+            if (newAttempts >= 3) {
+                setError('PIN 码错误，如需修改密码，请联系管理员');
+            } else {
+                setError('PIN 码错误');
+            }
             setPinInput('');
         }
     };
@@ -67,18 +81,18 @@ export const Login: React.FC = () => {
                         <div className="absolute top-20 left-10 w-64 h-64 bg-indigo-500 rounded-full blur-3xl"></div>
                         <div className="absolute bottom-20 right-10 w-48 h-48 bg-sky-500 rounded-full blur-3xl"></div>
                     </div>
-                    
+
                     <div className="relative z-10">
                         <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-indigo-500/30">
                             <ShieldCheck size={36} className="text-white" />
                         </div>
                         <h1 className="text-3xl font-bold mb-3 tracking-tight">积分管理系统</h1>
                         <p className="text-slate-300 text-lg mb-10">企业级积分权重管理系统 v2.5</p>
-                        
+
                         <div className="space-y-5">
                             {[
                                 '角色权限分级管控',
-                                '人员档案数据库管理', 
+                                '人员档案数据库管理',
                                 '实时积分权重计算'
                             ].map((text, i) => (
                                 <div key={i} className="flex items-center gap-4">
