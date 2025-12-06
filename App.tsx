@@ -45,7 +45,7 @@ import { MonthlySummary } from './pages/weaving/MonthlySummary';
 import { BonusCalculation } from './pages/weaving/BonusCalculation';
 import { MachineManagement } from './pages/weaving/MachineManagement';
 import { ProductManagement } from './pages/weaving/ProductManagement';
-import { Menu, Loader2, HardHat } from 'lucide-react';
+import { Menu, Loader2 } from 'lucide-react';
 import { getDefaultRoute } from './utils/routeHelpers';
 
 /**

@@ -1,5 +1,5 @@
 ﻿import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
   Calculator,
@@ -12,7 +12,6 @@ import {
   Factory,
   Layers,
   ChevronDown,
-  ChevronRight,
   Grid3X3,
   Server,
   MonitorPlay,
@@ -30,7 +29,6 @@ import { useData } from '../contexts/DataContext';
 export const Sidebar = ({ isOpen, toggle }: { isOpen: boolean; toggle: () => void }) => {
   const { user, logout, role, hasPermission, hasScope } = useAuth();
   const { isSaving } = useData();
-  const location = useLocation();
 
   const [expandedSections, setExpandedSections] = useState<string[]>(['styling', 'weaving', 'system']);
 

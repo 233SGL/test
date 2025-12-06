@@ -9,7 +9,7 @@
  */
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-    HardHat, Activity, TrendingUp, Users, AlertCircle,
+    HardHat, Activity, Users, AlertCircle,
     Settings, Gauge, Factory, Target,
     ArrowUpRight, ArrowDownRight, Minus
 } from 'lucide-react';
@@ -104,7 +104,7 @@ export const WeavingDashboard = () => {
     // 从数据库读取配置
     const [config, setConfig] = useState<WeavingConfig>(DEFAULT_WEAVING_CONFIG);
     const [machines, setMachines] = useState<typeof DEFAULT_MACHINES>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [_isLoading, setIsLoading] = useState(true); // 用于后续添加加载状态显示
     const [monthlyData] = useState<WeavingMonthlyData>({
         netFormationRate: 75,
         equivalentOutput: 58000,
@@ -119,8 +119,8 @@ export const WeavingDashboard = () => {
         const loadData = async () => {
             try {
                 const [configRes, machinesRes] = await Promise.all([
-                    fetch(`${window.location.protocol}//${window.location.hostname}:3000/api/weaving/config`),
-                    fetch(`${window.location.protocol}//${window.location.hostname}:3000/api/weaving/machines`)
+                    fetch('/api/weaving/config'),
+                    fetch('/api/weaving/machines')
                 ]);
 
                 if (configRes.ok) {
@@ -256,36 +256,58 @@ export const WeavingDashboard = () => {
                         </div>
                     </div>
 
-                    {/* 等效产量 */}
+                    {/* 等效产量 - 按单机台平均显示 */}
                     <div className="card p-5 hover:shadow-lg transition-shadow duration-300">
                         <div className="flex items-center gap-2 text-slate-500 mb-2">
                             <Factory size={18} className="text-violet-500" />
                             <span className="text-sm font-medium">等效产量</span>
+                            <span className="text-xs text-slate-400">（单机台平均）</span>
                         </div>
-                        <div className="text-3xl font-bold text-slate-900 tabular-nums">
-                            {monthlyData.equivalentOutput.toLocaleString()}
-                            <span className="text-base font-normal text-slate-400 ml-1">㎡</span>
-                        </div>
-                        <div className="mt-2 flex items-center justify-between">
-                            <span className="text-xs text-slate-400">
-                                目标: {totalTargetOutput.toLocaleString()} ㎡
-                            </span>
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${monthlyData.equivalentOutput >= totalTargetOutput
-                                ? 'bg-emerald-100 text-emerald-700'
-                                : 'bg-amber-100 text-amber-700'
-                                }`}>
-                                {((monthlyData.equivalentOutput / totalTargetOutput) * 100).toFixed(1)}%
-                            </span>
-                        </div>
-                        {/* 进度条 */}
-                        <div className="mt-3 h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-gradient-to-r from-violet-400 to-violet-600 rounded-full transition-all duration-500"
-                                style={{
-                                    width: `${Math.min(100, (monthlyData.equivalentOutput / totalTargetOutput) * 100)}%`
-                                }}
-                            />
-                        </div>
+                        {(() => {
+                            // 计算单机台平均产量
+                            const avgOutputPerMachine = monthlyData.activeMachines > 0
+                                ? monthlyData.equivalentOutput / monthlyData.activeMachines
+                                : 0;
+                            // 单机台目标（默认6450㎡）
+                            const singleMachineTarget = config.targetEquivalentOutput;
+                            // 单机台完成率
+                            const singleMachineRate = singleMachineTarget > 0
+                                ? (avgOutputPerMachine / singleMachineTarget) * 100
+                                : 0;
+
+                            return (
+                                <>
+                                    <div className="text-3xl font-bold text-slate-900 tabular-nums">
+                                        {Math.round(avgOutputPerMachine).toLocaleString()}
+                                        <span className="text-base font-normal text-slate-400 ml-1">㎡</span>
+                                    </div>
+                                    <div className="mt-2 flex items-center justify-between">
+                                        <span className="text-xs text-slate-400">
+                                            单机目标: {singleMachineTarget.toLocaleString()} ㎡
+                                        </span>
+                                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${singleMachineRate >= 100
+                                            ? 'bg-emerald-100 text-emerald-700'
+                                            : 'bg-amber-100 text-amber-700'
+                                            }`}>
+                                            {singleMachineRate.toFixed(1)}%
+                                        </span>
+                                    </div>
+                                    {/* 进度条 */}
+                                    <div className="mt-3 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-violet-400 to-violet-600 rounded-full transition-all duration-500"
+                                            style={{
+                                                width: `${Math.min(100, singleMachineRate)}%`
+                                            }}
+                                        />
+                                    </div>
+                                    {/* 总产量提示 */}
+                                    <div className="mt-2 pt-2 border-t border-slate-100 text-xs text-slate-400">
+                                        总产量: {monthlyData.equivalentOutput.toLocaleString()} ㎡ / {totalTargetOutput.toLocaleString()} ㎡
+                                    </div>
+                                </>
+                            );
+                        })()}
                     </div>
 
                     {/* 人员效率 */}

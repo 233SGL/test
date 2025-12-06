@@ -26,42 +26,51 @@ interface ConfigItemProps {
     min?: number;
     max?: number;
     step?: number;
+    id?: string;
 }
 
 const ConfigItem: React.FC<ConfigItemProps> = ({
-    label, value, onChange, suffix, description, min, max, step = 1
-}) => (
-    <div className="space-y-1.5">
-        <label className="block text-sm font-semibold text-slate-700">
-            {label}
-        </label>
-        <div className="relative">
-            <input
-                type="number"
-                value={value}
-                onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-                className="input pr-12"
-                min={min}
-                max={max}
-                step={step}
-            />
-            {suffix && (
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-                    {suffix}
-                </span>
+    label, value, onChange, suffix, description, min, max, step = 1, id
+}) => {
+    // 生成唯一 ID 用于表单关联
+    const inputId = id || `config-${label.replace(/\s+/g, '-').toLowerCase()}`;
+
+    return (
+        <div className="space-y-1.5">
+            <label htmlFor={inputId} className="block text-sm font-semibold text-slate-700">
+                {label}
+            </label>
+            <div className="relative">
+                <input
+                    id={inputId}
+                    name={inputId}
+                    type="number"
+                    value={value}
+                    onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+                    className="input pr-12"
+                    min={min}
+                    max={max}
+                    step={step}
+                    aria-describedby={description ? `${inputId}-desc` : undefined}
+                />
+                {suffix && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" aria-hidden="true">
+                        {suffix}
+                    </span>
+                )}
+            </div>
+            {description && (
+                <p id={`${inputId}-desc`} className="text-xs text-slate-400">{description}</p>
             )}
         </div>
-        {description && (
-            <p className="text-xs text-slate-400">{description}</p>
-        )}
-    </div>
-);
+    );
+};
 
 export const Configuration = () => {
     const [config, setConfig] = useState<WeavingConfig>(DEFAULT_WEAVING_CONFIG);
     const [originalConfig, setOriginalConfig] = useState<WeavingConfig>(DEFAULT_WEAVING_CONFIG);
     const [hasChanges, setHasChanges] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [_isLoading, setIsLoading] = useState(true); // 用于后续添加加载状态显示
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
 
