@@ -182,6 +182,7 @@ export const Attendance: React.FC = () => {
                                                     }}
                                                     className={`w-full h-10 text-center bg-transparent focus:bg-blue-100 focus:text-blue-700 focus:font-bold focus:outline-none transition-colors ${displayVal ? 'text-slate-800 font-medium' : 'text-slate-300'}`}
                                                     placeholder={isSun ? '' : '-'}
+                                                    aria-label={`${emp.employeeName} ${d}日工时`}
                                                 />
                                             </td>
                                         );

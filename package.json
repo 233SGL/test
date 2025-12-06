@@ -9,6 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "server": "node server.js",
+    "start": "concurrently \"npm run server\" \"npm run dev\"",
     "test": "vitest run",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

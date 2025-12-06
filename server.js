@@ -31,6 +31,27 @@ const app = express();
 app.use(cors());        // 允许跨域请求
 app.use(express.json()); // 解析 JSON 请求体
 
+// 安全头部中间件
+app.use((req, res, next) => {
+  // 防止 MIME 类型嗅探攻击
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  // 使用现代缓存控制头，移除已弃用的头部
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.removeHeader('Pragma');
+  res.removeHeader('Expires');
+  next();
+});
+
+// 确保 JSON 响应使用正确的 charset
+app.use((req, res, next) => {
+  const originalJson = res.json.bind(res);
+  res.json = (body) => {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    return originalJson(body);
+  };
+  next();
+});
+
 /**
  * 数据库连接池配置
  * 使用 Supabase Session Pooler 连接
@@ -513,8 +534,8 @@ app.put('/api/weaving/config', async (req, res) => {
          updated_at = NOW()
        RETURNING *`,
       [netFormationBenchmark, operationRateBenchmark, targetEquivalentOutput,
-       operatorQuota, avgTargetBonus, adminTeamSize, operationRateBonusUnit,
-       leaderCoef, memberCoef, leaderBaseSalary, memberBaseSalary]
+        operatorQuota, avgTargetBonus, adminTeamSize, operationRateBonusUnit,
+        leaderCoef, memberCoef, leaderBaseSalary, memberBaseSalary]
     );
     res.json(rows[0]);
   } catch (error) {
@@ -582,8 +603,8 @@ app.post('/api/weaving/monthly-data', async (req, res) => {
          updated_at = NOW()
        RETURNING *`,
       [year, month, netFormationRate, operationRate, equivalentOutput,
-       activeMachines, actualOperators, attendanceDays,
-       JSON.stringify(calculationSnapshot), JSON.stringify(machineRecords)]
+        activeMachines, actualOperators, attendanceDays,
+        JSON.stringify(calculationSnapshot), JSON.stringify(machineRecords)]
     );
     res.json(rows[0]);
   } catch (error) {
@@ -696,10 +717,10 @@ app.delete('/api/weaving/products/:id', async (req, res) => {
 app.get('/api/weaving/production-records', async (req, res) => {
   try {
     const { year, month, machineId, productId } = req.query;
-    
+
     let query = 'SELECT * FROM weaving_production_records WHERE year = $1 AND month = $2';
     const params = [year, month];
-    
+
     if (machineId) {
       params.push(machineId);
       query += ` AND machine_id = $${params.length}`;
@@ -708,9 +729,9 @@ app.get('/api/weaving/production-records', async (req, res) => {
       params.push(productId);
       query += ` AND product_id = $${params.length}`;
     }
-    
+
     query += ' ORDER BY production_date DESC, id DESC';
-    
+
     const { rows } = await pool.query(query, params);
     const records = rows.map(row => ({
       id: row.id,
@@ -751,12 +772,12 @@ app.post('/api/weaving/production-records', async (req, res) => {
       productionDate, machineId, productId, length,
       startTime, endTime, qualityGrade, isQualified, notes
     } = req.body;
-    
+
     // 从日期提取年月
     const date = new Date(productionDate);
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
-    
+
     const { rows } = await pool.query(
       `INSERT INTO weaving_production_records 
         (year, month, production_date, machine_id, product_id, length, start_time, end_time, quality_grade, is_qualified, notes)
@@ -776,21 +797,21 @@ app.post('/api/weaving/production-records', async (req, res) => {
 app.put('/api/weaving/production-records/:id', async (req, res) => {
   try {
     const { length, qualityGrade, isQualified, notes } = req.body;
-    
+
     // 获取当前记录
     const { rows: current } = await pool.query(
       'SELECT * FROM weaving_production_records WHERE id = $1',
       [req.params.id]
     );
     if (!current[0]) return res.status(404).json({ error: '记录不存在' });
-    
+
     // 合并更新字段
     const record = current[0];
     const newLength = length !== undefined ? length : record.length;
     const newQualityGrade = qualityGrade !== undefined ? qualityGrade : record.quality_grade;
     const newIsQualified = isQualified !== undefined ? isQualified : record.is_qualified;
     const newNotes = notes !== undefined ? notes : record.notes;
-    
+
     // 更新记录（触发器会重新计算等效产量）
     const { rows } = await pool.query(
       `UPDATE weaving_production_records SET
@@ -798,7 +819,7 @@ app.put('/api/weaving/production-records/:id', async (req, res) => {
        WHERE id = $1 RETURNING *`,
       [req.params.id, newLength, newQualityGrade, newIsQualified, newNotes]
     );
-    
+
     // 转换字段名为驼峰
     const result = {
       id: rows[0].id,
@@ -817,7 +838,7 @@ app.put('/api/weaving/production-records/:id', async (req, res) => {
       notes: rows[0].notes,
       createdAt: rows[0].created_at
     };
-    
+
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -848,7 +869,7 @@ app.delete('/api/weaving/production-records/:id', async (req, res) => {
 app.get('/api/weaving/monthly-summary/:year/:month', async (req, res) => {
   try {
     const { year, month } = req.params;
-    
+
     // 从生产记录聚合数据
     const { rows } = await pool.query(`
       SELECT 
@@ -860,22 +881,22 @@ app.get('/api/weaving/monthly-summary/:year/:month', async (req, res) => {
       FROM weaving_production_records
       WHERE year = $1 AND month = $2
     `, [year, month]);
-    
+
     const summary = rows[0];
-    const netFormationRate = summary.total_nets > 0 
+    const netFormationRate = summary.total_nets > 0
       ? (summary.qualified_nets / summary.total_nets * 100).toFixed(2)
       : 0;
-    
+
     // 获取活跃机台数
     const machineResult = await pool.query(
       "SELECT COUNT(*) as count FROM weaving_machines WHERE status = 'running'"
     );
-    
+
     // 获取操作工人数
     const operatorResult = await pool.query(
       "SELECT COUNT(*) as count FROM weaving_employees WHERE position = 'operator' AND status = 'active'"
     );
-    
+
     res.json({
       year: parseInt(year),
       month: parseInt(month),
@@ -900,7 +921,7 @@ app.get('/api/weaving/monthly-summary/:year/:month', async (req, res) => {
 app.get('/api/weaving/machine-summary/:year/:month', async (req, res) => {
   try {
     const { year, month } = req.params;
-    
+
     const { rows } = await pool.query(`
       SELECT 
         machine_id,
@@ -913,7 +934,7 @@ app.get('/api/weaving/machine-summary/:year/:month', async (req, res) => {
       GROUP BY machine_id
       ORDER BY machine_id
     `, [year, month]);
-    
+
     const summary = rows.map(row => ({
       machineId: row.machine_id,
       netCount: parseInt(row.net_count),
@@ -921,7 +942,7 @@ app.get('/api/weaving/machine-summary/:year/:month', async (req, res) => {
       totalArea: parseFloat(row.total_area),
       totalEquivalent: parseFloat(row.total_equivalent)
     }));
-    
+
     res.json(summary);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -969,12 +990,12 @@ app.get('/api/weaving/machine-records/:year/:month', async (req, res) => {
 app.post('/api/weaving/machine-records', async (req, res) => {
   try {
     const { year, month, records } = req.body;
-    
+
     // 使用事务批量插入/更新
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      
+
       for (const record of records) {
         await client.query(
           `INSERT INTO weaving_machine_monthly_records 
@@ -985,7 +1006,7 @@ app.post('/api/weaving/machine-records', async (req, res) => {
           [year, month, record.machineId, record.actualOutput, record.weftDensity, record.machineWidth, record.speedType, record.equivalentOutput]
         );
       }
-      
+
       await client.query('COMMIT');
       res.json({ success: true, count: records.length });
     } catch (err) {

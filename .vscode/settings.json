@@ -10,5 +10,6 @@
     "cursor-global": true,
     "cursor-workspace": true
   },
-  "github.copilot.chat.codeGeneration.useReferencedFiles": true
+  "github.copilot.chat.codeGeneration.useReferencedFiles": true,
+  "codingcopilot.enableCompletionLanguage": {}
 }

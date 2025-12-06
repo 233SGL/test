@@ -11,13 +11,13 @@
  * @module pages/weaving/DataEntry
  */
 import React, { useState, useMemo } from 'react';
-import { 
+import {
     Database, Calculator, Factory, Save, RefreshCw,
     ChevronDown, ChevronUp, AlertCircle, CheckCircle2
 } from 'lucide-react';
 import { WeavingMonthlyData, DEFAULT_MACHINES, DEFAULT_WEAVING_CONFIG } from '../../weavingTypes';
-import { 
-    MachineProductionData, 
+import {
+    MachineProductionData,
     calculateTotalEquivalent,
     calculateOutputCoefficient,
     calculateWidthCoefficient,
@@ -33,8 +33,8 @@ interface MachineInputProps {
     onToggle: () => void;
 }
 
-const MachineInput: React.FC<MachineInputProps> = ({ 
-    machine, data, onChange, isExpanded, onToggle 
+const MachineInput: React.FC<MachineInputProps> = ({
+    machine, data, onChange, isExpanded, onToggle
 }) => {
     const outputCoef = calculateOutputCoefficient(data.weftDensity);
     const widthCoef = calculateWidthCoefficient(data.machineWidth);
@@ -42,20 +42,18 @@ const MachineInput: React.FC<MachineInputProps> = ({
     const equivalentOutput = data.actualOutput * outputCoef * widthCoef * speedCoef;
 
     return (
-        <div className={`border rounded-xl overflow-hidden transition-all duration-200 ${
-            data.actualOutput > 0 ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200'
-        }`}>
+        <div className={`border rounded-xl overflow-hidden transition-all duration-200 ${data.actualOutput > 0 ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200'
+            }`}>
             {/* 机台标题栏 */}
             <button
                 onClick={onToggle}
                 className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors"
             >
                 <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold ${
-                        data.actualOutput > 0 
-                            ? 'bg-emerald-100 text-emerald-700' 
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold ${data.actualOutput > 0
+                            ? 'bg-emerald-100 text-emerald-700'
                             : 'bg-slate-100 text-slate-600'
-                    }`}>
+                        }`}>
                         {machine.id}
                     </div>
                     <div className="text-left">
@@ -89,9 +87,9 @@ const MachineInput: React.FC<MachineInputProps> = ({
                             <input
                                 type="number"
                                 value={data.actualOutput || ''}
-                                onChange={(e) => onChange({ 
-                                    ...data, 
-                                    actualOutput: parseFloat(e.target.value) || 0 
+                                onChange={(e) => onChange({
+                                    ...data,
+                                    actualOutput: parseFloat(e.target.value) || 0
                                 })}
                                 className="input text-sm"
                                 placeholder="0"
@@ -104,9 +102,9 @@ const MachineInput: React.FC<MachineInputProps> = ({
                             <input
                                 type="number"
                                 value={data.weftDensity || ''}
-                                onChange={(e) => onChange({ 
-                                    ...data, 
-                                    weftDensity: parseFloat(e.target.value) || 0 
+                                onChange={(e) => onChange({
+                                    ...data,
+                                    weftDensity: parseFloat(e.target.value) || 0
                                 })}
                                 className="input text-sm"
                                 placeholder="基准: 13"
@@ -119,25 +117,28 @@ const MachineInput: React.FC<MachineInputProps> = ({
                             <input
                                 type="number"
                                 value={data.machineWidth || ''}
-                                onChange={(e) => onChange({ 
-                                    ...data, 
-                                    machineWidth: parseFloat(e.target.value) || 0 
+                                onChange={(e) => onChange({
+                                    ...data,
+                                    machineWidth: parseFloat(e.target.value) || 0
                                 })}
                                 className="input text-sm"
                                 placeholder="默认: 8.5"
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                            <label htmlFor={`speed-type-${machine.id}`} className="block text-xs font-medium text-slate-600 mb-1.5">
                                 速度类型
                             </label>
                             <select
+                                id={`speed-type-${machine.id}`}
+                                name={`speed-type-${machine.id}`}
                                 value={data.speedType}
-                                onChange={(e) => onChange({ 
-                                    ...data, 
-                                    speedType: e.target.value as 'H2' | 'H5' 
+                                onChange={(e) => onChange({
+                                    ...data,
+                                    speedType: e.target.value as 'H2' | 'H5'
                                 })}
                                 className="input text-sm"
+                                aria-label="选择速度类型"
                             >
                                 <option value="H2">H2 高速 (系数1.0)</option>
                                 <option value="H5">H5 低速 (系数0.56)</option>
@@ -197,7 +198,7 @@ export const DataEntry = () => {
 
     // 更新机台数据
     const handleMachineChange = (machineId: string, data: MachineProductionData) => {
-        setMachineData(prev => prev.map(m => 
+        setMachineData(prev => prev.map(m =>
             m.machineId === machineId ? data : m
         ));
     };
@@ -373,7 +374,7 @@ export const DataEntry = () => {
 
                 {/* ===== 机台产量录入 ===== */}
                 <div className="card overflow-hidden">
-                    <div 
+                    <div
                         className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between cursor-pointer"
                         onClick={() => setShowMachineInput(!showMachineInput)}
                     >
