@@ -15,7 +15,10 @@ import {
   Edit3,
   Loader2,
   FileText,
-  Download
+  Download,
+  RefreshCw,
+  X,
+  Save
 } from 'lucide-react';
 
 // ========================================
@@ -59,14 +62,24 @@ interface Product {
 const API_BASE = 'http://localhost:3000/api/weaving';
 
 async function fetchRecords(year: number, month: number): Promise<ProductionRecord[]> {
-  const res = await fetch(`${API_BASE}/production?year=${year}&month=${month}`);
+  const res = await fetch(`${API_BASE}/production-records?year=${year}&month=${month}`);
   if (!res.ok) throw new Error('获取记录失败');
   return res.json();
 }
 
 async function deleteRecord(id: number): Promise<void> {
-  const res = await fetch(`${API_BASE}/production/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${API_BASE}/production-records/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error('删除失败');
+}
+
+async function updateRecord(id: number, data: Partial<ProductionRecord>): Promise<ProductionRecord> {
+  const res = await fetch(`${API_BASE}/production-records/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('更新失败');
+  return res.json();
 }
 
 async function fetchMachines(): Promise<Machine[]> {
@@ -101,6 +114,15 @@ export const ProductionRecords: React.FC = () => {
   const [filterProduct, setFilterProduct] = useState<string>('');
   const [searchText, setSearchText] = useState('');
 
+  // 编辑状态
+  const [editingRecord, setEditingRecord] = useState<ProductionRecord | null>(null);
+  const [editForm, setEditForm] = useState({
+    length: 0,
+    qualityGrade: 'A',
+    notes: ''
+  });
+  const [saving, setSaving] = useState(false);
+
   // 机台按数字排序（H1, H2, ... H11）
   const sortMachines = (machines: Machine[]) => {
     return [...machines].sort((a, b) => {
@@ -111,8 +133,9 @@ export const ProductionRecords: React.FC = () => {
   };
 
   // 加载数据
-  useEffect(() => {
+  const loadData = () => {
     setLoading(true);
+    setError(null);
     Promise.all([
       fetchRecords(year, month),
       fetchMachines(),
@@ -128,7 +151,16 @@ export const ProductionRecords: React.FC = () => {
         setError(err.message);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    loadData();
   }, [year, month]);
+
+  // 刷新数据
+  const handleRefresh = () => {
+    loadData();
+  };
 
   // 删除记录
   const handleDelete = async (id: number) => {
@@ -138,6 +170,43 @@ export const ProductionRecords: React.FC = () => {
       setRecords(prev => prev.filter(r => r.id !== id));
     } catch (err: any) {
       alert(err.message);
+    }
+  };
+
+  // 打开编辑模态框
+  const handleEdit = (record: ProductionRecord) => {
+    setEditingRecord(record);
+    setEditForm({
+      length: record.length,
+      qualityGrade: record.qualityGrade,
+      notes: record.notes || ''
+    });
+  };
+
+  // 保存编辑
+  const handleSaveEdit = async () => {
+    if (!editingRecord) return;
+    
+    setSaving(true);
+    try {
+      const updated = await updateRecord(editingRecord.id, {
+        length: editForm.length,
+        qualityGrade: editForm.qualityGrade,
+        isQualified: editForm.qualityGrade === 'A' || editForm.qualityGrade === 'B',
+        notes: editForm.notes
+      });
+      
+      // 更新本地记录
+      setRecords(prev => prev.map(r => 
+        r.id === editingRecord.id ? { ...r, ...updated } : r
+      ));
+      setEditingRecord(null);
+      // 刷新数据以获取重新计算的值
+      loadData();
+    } catch (err: any) {
+      alert('保存失败: ' + err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -198,6 +267,16 @@ export const ProductionRecords: React.FC = () => {
               ))}
             </select>
           </div>
+          <div className="w-px h-6 bg-slate-200"></div>
+          {/* 刷新按钮 */}
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="p-2 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
+            title="刷新数据"
+          >
+            <RefreshCw className={`w-5 h-5 text-slate-600 ${loading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
 
@@ -341,6 +420,7 @@ export const ProductionRecords: React.FC = () => {
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-1">
                         <button 
+                          onClick={() => handleEdit(record)}
                           className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
                           title="编辑"
                         >
@@ -362,6 +442,98 @@ export const ProductionRecords: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* 编辑模态框 */}
+      {editingRecord && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-800">编辑生产记录</h3>
+              <button 
+                onClick={() => setEditingRecord(null)}
+                className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {/* 记录信息展示 */}
+              <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 rounded-lg text-sm">
+                <div>
+                  <span className="text-slate-500">日期：</span>
+                  <span className="text-slate-700">{new Date(editingRecord.productionDate).toLocaleDateString()}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">机台：</span>
+                  <span className="text-slate-700">{getMachineName(editingRecord.machineId)}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">网种：</span>
+                  <span className="text-slate-700">{getProductName(editingRecord.productId)}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">面积：</span>
+                  <span className="text-slate-700">{editingRecord.actualArea.toFixed(1)} ㎡</span>
+                </div>
+              </div>
+
+              {/* 可编辑字段 */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">长度 (米)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={editForm.length}
+                  onChange={e => setEditForm(prev => ({ ...prev, length: parseFloat(e.target.value) || 0 }))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">质量等级</label>
+                <select
+                  value={editForm.qualityGrade}
+                  onChange={e => setEditForm(prev => ({ ...prev, qualityGrade: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="A">A - 优等品</option>
+                  <option value="B">B - 一等品</option>
+                  <option value="C">C - 合格品</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">备注</label>
+                <textarea
+                  value={editForm.notes}
+                  onChange={e => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                  placeholder="可选备注信息..."
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">
+              <button
+                onClick={() => setEditingRecord(null)}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={saving}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
