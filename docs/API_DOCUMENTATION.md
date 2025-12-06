@@ -8,6 +8,7 @@
 - **数据格式**: JSON
 - **字符编码**: UTF-8
 - **认证方式**: 暂无（后续可添加 JWT）
+- **后端框架**: Express.js + PostgreSQL (Supabase)
 
 ### 请求头
 
@@ -31,6 +32,17 @@ Content-Type: application/json
 }
 ```
 
+### HTTP 状态码
+
+| 状态码 | 说明 |
+|--------|------|
+| `200` | 成功 |
+| `201` | 创建成功 |
+| `204` | 删除成功（无内容返回）|
+| `400` | 请求参数错误 |
+| `404` | 资源不存在 |
+| `500` | 服务器内部错误 |
+
 ---
 
 ## 通用 API
@@ -53,15 +65,39 @@ GET /api/health
 
 ---
 
-## 员工管理 API
+## 定型工段 API
 
-### 获取所有员工
+### 员工管理
+
+#### 获取所有员工
 
 ```
 GET /api/employees
 ```
 
-### 创建员工
+**响应示例**:
+```json
+[
+  {
+    "id": "emp001",
+    "name": "张三",
+    "gender": "male",
+    "workshopId": "ws_styling",
+    "department": "定型一车间",
+    "position": "操作工",
+    "joinDate": "2024-01-01",
+    "standardBaseScore": 100,
+    "status": "active",
+    "phone": "13800138000",
+    "expectedDailyHours": 8,
+    "machineId": "M1",
+    "baseSalary": 3000,
+    "coefficient": 1.0
+  }
+]
+```
+
+#### 创建员工
 
 ```
 POST /api/employees
@@ -71,102 +107,252 @@ Content-Type: application/json
   "id": "emp001",
   "name": "张三",
   "gender": "male",
-  "workshopId": "ws_weaving",
-  "department": "织造部",
+  "workshopId": "ws_styling",
+  "department": "定型一车间",
   "position": "操作工",
   "joinDate": "2024-01-01",
   "standardBaseScore": 100,
   "status": "active",
   "phone": "13800138000",
-  "expectedDailyHours": 8
+  "expectedDailyHours": 8,
+  "baseSalary": 3000,
+  "coefficient": 1.0
 }
 ```
 
-### 更新员工
+**请求体字段说明**:
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `id` | string | 是 | 员工编号 |
+| `name` | string | 是 | 姓名 |
+| `gender` | string | 是 | 性别: male/female |
+| `workshopId` | string | 是 | 所属工段ID |
+| `department` | string | 否 | 部门名称 |
+| `position` | string | 是 | 职位 |
+| `joinDate` | string | 是 | 入职日期 (YYYY-MM-DD) |
+| `standardBaseScore` | number | 是 | 标准基础分 |
+| `status` | string | 是 | 状态: active/inactive |
+| `phone` | string | 否 | 联系电话 |
+| `expectedDailyHours` | number | 否 | 预期日工时，默认12 |
+| `baseSalary` | number | 否 | 基本工资，默认0 |
+| `coefficient` | number | 否 | 系数，默认1.0 |
+
+#### 更新员工
 
 ```
 PUT /api/employees/:id
+Content-Type: application/json
+
+{
+  "name": "张三",
+  "gender": "male",
+  "workshopId": "ws_styling",
+  "department": "定型一车间",
+  "position": "班长",
+  "joinDate": "2024-01-01",
+  "standardBaseScore": 120,
+  "status": "active",
+  "phone": "13800138000",
+  "expectedDailyHours": 8,
+  "baseSalary": 3500,
+  "coefficient": 1.2
+}
 ```
 
-### 删除员工
+#### 删除员工
 
 ```
 DELETE /api/employees/:id
 ```
 
----
+**响应**: `204 No Content`
 
-## 系统用户 API
+### 月度数据
 
-### 获取所有用户
-
-```
-GET /api/users
-```
-
-### 创建用户
-
-```
-POST /api/users
-```
-
-### 更新用户
-
-```
-PUT /api/users/:id
-```
-
-### 删除用户
-
-```
-DELETE /api/users/:id
-```
-
----
-
-## 工段/车间 API
-
-### 获取所有工段
-
-```
-GET /api/workshops
-```
-
----
-
-## 系统设置 API
-
-### 获取设置
-
-```
-GET /api/settings
-```
-
-### 更新设置
-
-```
-PUT /api/settings
-```
-
----
-
-## 月度数据 API
-
-### 获取指定月份数据
+#### 获取指定月份数据
 
 ```
 GET /api/monthly-data/:year/:month
 ```
 
-### 保存月度数据
+**示例**: `GET /api/monthly-data/2025/12`
+
+**响应示例**:
+```json
+{
+  "year": 2025,
+  "month": 12,
+  "data": {
+    "employees": [...],
+    "attendance": {...},
+    "scores": {...}
+  }
+}
+```
+
+#### 保存月度数据
 
 ```
 POST /api/monthly-data
+Content-Type: application/json
+
+{
+  "year": 2025,
+  "month": 12,
+  "data": {
+    "employees": [...],
+    "attendance": {...},
+    "scores": {...}
+  }
+}
+```
+
+**说明**: 使用 `UPSERT` 模式，如果记录存在则更新，不存在则创建。
+
+---
+
+## 系统管理 API
+
+### 系统用户
+
+#### 获取所有用户
+
+```
+GET /api/users
+```
+
+**响应示例**:
+```json
+[
+  {
+    "id": "user001",
+    "username": "admin",
+    "display_name": "管理员",
+    "role": "admin",
+    "custom_role_name": null,
+    "pin_code": "123456",
+    "is_system": true,
+    "scopes": ["styling", "weaving", "system"],
+    "permissions": ["read", "write", "delete", "admin"]
+  }
+]
+```
+
+#### 创建用户
+
+```
+POST /api/users
+Content-Type: application/json
+
+{
+  "id": "user002",
+  "username": "operator1",
+  "displayName": "操作员小王",
+  "role": "operator",
+  "customRoleName": null,
+  "pinCode": "654321",
+  "isSystem": false,
+  "scopes": ["styling"],
+  "permissions": ["read", "write"]
+}
+```
+
+**请求体字段说明**:
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `id` | string | 是 | 用户ID |
+| `username` | string | 是 | 用户名（登录用）|
+| `displayName` | string | 是 | 显示名称 |
+| `role` | string | 是 | 角色: admin/manager/operator |
+| `customRoleName` | string | 否 | 自定义角色名称 |
+| `pinCode` | string | 是 | PIN码（6位数字）|
+| `isSystem` | boolean | 否 | 是否系统用户，默认false |
+| `scopes` | array | 是 | 权限范围: styling/weaving/system |
+| `permissions` | array | 是 | 权限: read/write/delete/admin |
+
+#### 更新用户
+
+```
+PUT /api/users/:id
+Content-Type: application/json
+
+{
+  "username": "operator1",
+  "displayName": "操作员老王",
+  "role": "manager",
+  "pinCode": "111111",
+  "isSystem": false,
+  "scopes": ["styling", "weaving"],
+  "permissions": ["read", "write", "delete"]
+}
+```
+
+#### 删除用户
+
+```
+DELETE /api/users/:id
+```
+
+**响应**: `204 No Content`
+
+### 工段/车间
+
+#### 获取所有工段
+
+```
+GET /api/workshops
+```
+
+**响应示例**:
+```json
+[
+  {
+    "id": "ws_styling",
+    "name": "定型工段",
+    "description": "负责产品定型工序"
+  },
+  {
+    "id": "ws_weaving",
+    "name": "织造工段",
+    "description": "负责织网工序"
+  }
+]
+```
+
+### 系统设置
+
+#### 获取设置
+
+```
+GET /api/settings
+```
+
+**响应示例**:
+```json
+{
+  "id": "global",
+  "announcement": "系统公告内容..."
+}
+```
+
+#### 更新设置
+
+```
+PUT /api/settings
+Content-Type: application/json
+
+{
+  "announcement": "新的系统公告内容"
+}
 ```
 
 ---
 
 ## 织造工段 API
+
+> 所有织造工段 API 以 `/api/weaving` 为前缀
 
 ### 员工管理
 
@@ -187,8 +373,9 @@ GET /api/weaving/employees
     "baseSalary": 3500,
     "coefficient": 1.3,
     "joinDate": "2020-01-01",
+    "phone": "13800138001",
     "status": "active",
-    "attendanceDays": 26,
+    "notes": "管理员班班长",
     "machineId": null,
     "team": null
   }
@@ -208,15 +395,51 @@ Content-Type: application/json
   "position": "operator",
   "baseSalary": 0,
   "coefficient": 0,
+  "joinDate": "2024-06-01",
+  "phone": "13800138004",
+  "status": "active",
+  "notes": "",
   "machineId": "H1",
   "team": "一班"
 }
 ```
 
+**请求体字段说明**:
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `id` | string | 是 | 员工编号 |
+| `name` | string | 是 | 姓名 |
+| `gender` | string | 是 | 性别: male/female |
+| `position` | string | 是 | 岗位: admin_leader/admin_member/operator |
+| `baseSalary` | number | 否 | 基本工资，默认0 |
+| `coefficient` | number | 否 | 分配系数，默认1.0 |
+| `joinDate` | string | 否 | 入职日期 (YYYY-MM-DD) |
+| `phone` | string | 否 | 联系电话 |
+| `status` | string | 否 | 状态: active/inactive，默认active |
+| `notes` | string | 否 | 备注 |
+| `machineId` | string | 否 | 负责机台ID（操作工填写）|
+| `team` | string | 否 | 班组 |
+
 #### 更新织造员工
 
 ```
 PUT /api/weaving/employees/:id
+Content-Type: application/json
+
+{
+  "name": "李四",
+  "gender": "male",
+  "position": "operator",
+  "baseSalary": 0,
+  "coefficient": 0,
+  "joinDate": "2024-06-01",
+  "phone": "13800138004",
+  "status": "active",
+  "notes": "优秀员工",
+  "machineId": "H2",
+  "team": "二班"
+}
 ```
 
 #### 删除织造员工
@@ -224,6 +447,8 @@ PUT /api/weaving/employees/:id
 ```
 DELETE /api/weaving/employees/:id
 ```
+
+**响应**: `204 No Content`
 
 ### 网种/产品管理
 
@@ -237,10 +462,20 @@ GET /api/weaving/products
 ```json
 [
   {
-    "id": "product_13weft",
-    "name": "13纬密网",
+    "id": "22504",
+    "name": "22504标准网",
     "weftDensity": 13,
-    "isActive": true
+    "description": "基准产品，纬密13",
+    "isActive": true,
+    "createdAt": "2025-01-01T00:00:00Z"
+  },
+  {
+    "id": "7500",
+    "name": "7500高密网",
+    "weftDensity": 44.5,
+    "description": "高纬密产品，产量系数3.42",
+    "isActive": true,
+    "createdAt": "2025-01-01T00:00:00Z"
   }
 ]
 ```
@@ -249,12 +484,39 @@ GET /api/weaving/products
 
 ```
 POST /api/weaving/products
+Content-Type: application/json
+
+{
+  "id": "3616ssb",
+  "name": "3616ssb网",
+  "weftDensity": 44.5,
+  "description": "高纬密产品",
+  "isActive": true
+}
 ```
+
+**请求体字段说明**:
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `id` | string | 是 | 网种编号 |
+| `name` | string | 是 | 网种名称 |
+| `weftDensity` | number | 是 | 纬密值 |
+| `description` | string | 否 | 描述 |
+| `isActive` | boolean | 否 | 是否启用，默认true |
 
 #### 更新网种
 
 ```
 PUT /api/weaving/products/:id
+Content-Type: application/json
+
+{
+  "name": "3616ssb网（改）",
+  "weftDensity": 45,
+  "description": "高纬密产品（修改）",
+  "isActive": true
+}
 ```
 
 #### 删除网种
@@ -262,6 +524,8 @@ PUT /api/weaving/products/:id
 ```
 DELETE /api/weaving/products/:id
 ```
+
+**响应**: `204 No Content`
 
 ### 机台管理
 
@@ -277,9 +541,20 @@ GET /api/weaving/machines
   {
     "id": "H1",
     "name": "1号机",
+    "speedType": "H2",
     "width": 8.5,
     "effectiveWidth": 7.7,
     "speedWeftPerMin": 41,
+    "targetOutput": 6450,
+    "status": "running"
+  },
+  {
+    "id": "H11",
+    "name": "11号机",
+    "speedType": "H5",
+    "width": 8.8,
+    "effectiveWidth": 8.0,
+    "speedWeftPerMin": 23,
     "targetOutput": 6450,
     "status": "running"
   }
@@ -292,7 +567,7 @@ GET /api/weaving/machines
 PUT /api/weaving/machines/:id
 ```
 
-**请求体**（只需传递要更新的字段）:
+**请求体**（支持部分更新，只需传递要更新的字段）:
 ```json
 {
   "targetOutput": 6500
@@ -305,41 +580,65 @@ PUT /api/weaving/machines/:id
   "name": "1号机",
   "speedType": "H2",
   "width": 8.5,
-  "effectiveWidth": 7.7,
   "targetOutput": 6450,
   "status": "running"
 }
 ```
 
-**说明**: 更新操作只会修改请求体中提供的字段，未提供的字段保持原值不变。
+**请求体字段说明**:
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | string | 否 | 机台名称 |
+| `speedType` | string | 否 | 速度类型: H2/H5 |
+| `width` | number | 否 | 织造宽度 (m) |
+| `targetOutput` | number | 否 | 月目标产量 (㎡) |
+| `status` | string | 否 | 状态: running/threading/maintenance/idle |
+
+**说明**: 更新操作使用 `COALESCE` 只修改请求体中提供的字段，未提供的字段保持原值不变。
 
 ### 生产记录管理
 
 #### 获取指定月份的生产记录
 
 ```
-GET /api/weaving/production-records?year=2024&month=12
+GET /api/weaving/production-records?year=2025&month=12
 ```
+
+**查询参数**:
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `year` | number | 是 | 年份 |
+| `month` | number | 是 | 月份 |
+| `machineId` | string | 否 | 按机台筛选 |
+| `productId` | string | 否 | 按网种筛选 |
 
 **响应示例**:
 ```json
 [
   {
     "id": 1,
-    "productionDate": "2024-12-05",
+    "year": 2025,
+    "month": 12,
+    "productionDate": "2025-12-05",
     "machineId": "H1",
-    "machineName": "1号机",
-    "productId": "product_13weft",
-    "productName": "13纬密网",
-    "length": 120,
+    "productId": "22504",
+    "length": 55,
     "machineWidth": 8.5,
     "weftDensity": 13,
-    "actualArea": 1020,
-    "equivalentOutput": 1020,
+    "speedType": "H2",
+    "actualArea": 467.5,
+    "outputCoef": 1,
+    "widthCoef": 1,
+    "speedCoef": 1,
+    "equivalentOutput": 467.5,
+    "startTime": "2025-12-05T08:00:00",
+    "endTime": "2025-12-05T16:00:00",
     "qualityGrade": "A",
     "isQualified": true,
-    "startTime": "2024-12-05T08:00:00",
-    "endTime": "2024-12-05T16:00:00"
+    "notes": "",
+    "createdAt": "2025-12-05T10:00:00Z"
   }
 ]
 ```
@@ -351,23 +650,60 @@ POST /api/weaving/production-records
 Content-Type: application/json
 
 {
-  "productionDate": "2024-12-05",
+  "productionDate": "2025-12-06",
   "machineId": "H1",
-  "productId": "product_13weft",
-  "length": 120,
+  "productId": "22504",
+  "length": 55,
+  "startTime": "2025-12-06T08:00:00",
+  "endTime": "2025-12-06T16:00:00",
   "qualityGrade": "A",
   "isQualified": true,
-  "startTime": "2024-12-05T08:00:00",
-  "endTime": "2024-12-05T16:00:00",
   "notes": ""
 }
 ```
+
+**请求体字段说明**:
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `productionDate` | string | 是 | 生产日期 (YYYY-MM-DD)，自动提取年月 |
+| `machineId` | string | 是 | 机台ID |
+| `productId` | string | 是 | 网种ID |
+| `length` | number | 是 | 长度 (m) |
+| `startTime` | string | 否 | 开始时间 (ISO 8601) |
+| `endTime` | string | 否 | 结束时间 (ISO 8601) |
+| `qualityGrade` | string | 否 | 质量等级: A/B/C，默认A |
+| `isQualified` | boolean | 否 | 是否合格，默认true |
+| `notes` | string | 否 | 备注 |
+
+**说明**: 
+- `year` 和 `month` 会从 `productionDate` 自动提取
+- `machineWidth`、`weftDensity`、`speedType` 会自动从机台和网种配置读取
+- `actualArea`、`outputCoef`、`widthCoef`、`speedCoef`、`equivalentOutput` 由数据库触发器自动计算
+
+#### 更新生产记录
+
+```
+PUT /api/weaving/production-records/:id
+Content-Type: application/json
+
+{
+  "length": 60,
+  "qualityGrade": "B",
+  "isQualified": true,
+  "notes": "修改后的备注"
+}
+```
+
+**说明**: 只支持更新 `length`、`qualityGrade`、`isQualified`、`notes` 字段，触发器会重新计算等效产量。
 
 #### 删除生产记录
 
 ```
 DELETE /api/weaving/production-records/:id
 ```
+
+**响应**: `204 No Content`
 
 ### 月度汇总
 
@@ -377,18 +713,65 @@ DELETE /api/weaving/production-records/:id
 GET /api/weaving/monthly-summary/:year/:month
 ```
 
+**示例**: `GET /api/weaving/monthly-summary/2025/12`
+
+从生产记录实时聚合计算，返回当月汇总数据。
+
 **响应示例**:
 ```json
 {
+  "year": 2025,
+  "month": 12,
   "totalNets": 150,
   "totalLength": 18000,
   "totalArea": 153000,
   "equivalentOutput": 153000,
-  "netFormationRate": 72.5,
-  "operationRate": 78.3,
+  "qualifiedNets": 145,
+  "netFormationRate": 96.67,
   "activeMachines": 10,
   "actualOperators": 22
 }
+```
+
+**响应字段说明**:
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `totalNets` | number | 总生产网数 |
+| `totalLength` | number | 总长度 (m) |
+| `totalArea` | number | 总面积 (㎡) |
+| `equivalentOutput` | number | 总等效产量 (㎡) |
+| `qualifiedNets` | number | 合格网数 |
+| `netFormationRate` | number | 成网率 (%) |
+| `activeMachines` | number | 运行机台数 |
+| `actualOperators` | number | 实际操作工人数 |
+
+#### 获取机台汇总数据
+
+```
+GET /api/weaving/machine-summary/:year/:month
+```
+
+**示例**: `GET /api/weaving/machine-summary/2025/12`
+
+**响应示例**:
+```json
+[
+  {
+    "machineId": "H1",
+    "netCount": 15,
+    "totalLength": 825,
+    "totalArea": 7012.5,
+    "totalEquivalent": 7012.5
+  },
+  {
+    "machineId": "H2",
+    "netCount": 12,
+    "totalLength": 660,
+    "totalArea": 5610,
+    "totalEquivalent": 5610
+  }
+]
 ```
 
 ### 配置管理
@@ -420,9 +803,26 @@ GET /api/weaving/config
 
 ```
 PUT /api/weaving/config
+Content-Type: application/json
+
+{
+  "netFormationBenchmark": 68,
+  "operationRateBenchmark": 72,
+  "targetEquivalentOutput": 6450,
+  "operatorQuota": 24,
+  "avgTargetBonus": 4000,
+  "adminTeamSize": 3,
+  "operationRateBonusUnit": 500,
+  "leaderCoef": 1.3,
+  "memberCoef": 1.0,
+  "leaderBaseSalary": 3500,
+  "memberBaseSalary": 2500
+}
 ```
 
-### 月度数据
+**说明**: 使用 `UPSERT` 模式，如果配置存在则更新，不存在则创建。
+
+### 月度数据存档
 
 #### 获取指定月份数据
 
@@ -430,10 +830,39 @@ PUT /api/weaving/config
 GET /api/weaving/monthly-data/:year/:month
 ```
 
+**示例**: `GET /api/weaving/monthly-data/2025/12`
+
+获取已保存的月度存档数据（包含计算快照）。
+
 **响应示例**:
 ```json
 {
-  "year": 2024,
+  "year": 2025,
+  "month": 12,
+  "netFormationRate": 72.5,
+  "operationRate": 78.3,
+  "equivalentOutput": 65000,
+  "activeMachines": 10,
+  "actualOperators": 22,
+  "attendanceDays": 26,
+  "calculationSnapshot": {
+    "qualityBonus": 15600,
+    "operationBonus": 3150,
+    "totalBonus": 18750,
+    "perPersonBonus": {...}
+  },
+  "machineRecords": [...]
+}
+```
+
+#### 保存月度数据
+
+```
+POST /api/weaving/monthly-data
+Content-Type: application/json
+
+{
+  "year": 2025,
   "month": 12,
   "netFormationRate": 72.5,
   "operationRate": 78.3,
@@ -446,23 +875,20 @@ GET /api/weaving/monthly-data/:year/:month
 }
 ```
 
-#### 保存月度数据
+**请求体字段说明**:
 
-```
-POST /api/weaving/monthly-data
-Content-Type: application/json
-
-{
-  "year": 2024,
-  "month": 12,
-  "netFormationRate": 72.5,
-  "operationRate": 78.3,
-  "equivalentOutput": 65000,
-  "activeMachines": 10,
-  "actualOperators": 22,
-  "attendanceDays": 26
-}
-```
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `year` | number | 是 | 年份 |
+| `month` | number | 是 | 月份 |
+| `netFormationRate` | number | 是 | 成网率 (%) |
+| `operationRate` | number | 是 | 运转率 (%) |
+| `equivalentOutput` | number | 是 | 等效产量 (㎡) |
+| `activeMachines` | number | 是 | 有效机台数 |
+| `actualOperators` | number | 是 | 实际操作工人数 |
+| `attendanceDays` | number | 是 | 出勤天数 |
+| `calculationSnapshot` | object | 否 | 计算结果快照 |
+| `machineRecords` | array | 否 | 机台记录数组 |
 
 #### 获取历史数据
 
@@ -472,7 +898,9 @@ GET /api/weaving/monthly-data
 
 返回最近 12 个月的数据，用于趋势图展示。
 
-### 机台产量记录
+### 机台产量记录（旧版兼容）
+
+> 此 API 为旧版兼容接口，新功能请使用生产记录 API
 
 #### 获取指定月份机台记录
 
@@ -501,7 +929,7 @@ POST /api/weaving/machine-records
 Content-Type: application/json
 
 {
-  "year": 2024,
+  "year": 2025,
   "month": 12,
   "records": [
     {
@@ -515,25 +943,6 @@ Content-Type: application/json
   ]
 }
 ```
-
----
-
-## 错误处理
-
-所有 API 在发生错误时返回统一格式：
-
-```json
-{
-  "error": "错误信息描述"
-}
-```
-
-HTTP 状态码：
-- `200` - 成功
-- `201` - 创建成功
-- `204` - 删除成功（无内容返回）
-- `404` - 资源不存在
-- `500` - 服务器内部错误
 
 ---
 
@@ -689,10 +1098,15 @@ HTTP 状态码：
 ## 更新日志
 
 ### 2025-12-06
+- 完善 API 文档：添加所有端点详细说明
+- 补充请求/响应字段说明表格
+- 添加定型工段 API、系统管理 API 完整文档
 - 完善机台更新 API，支持部分字段更新（COALESCE 保留原值）
 - 添加等效产量计算公式说明
 - 添加配置项详细说明
 - 添加速度系数、质量等级数据字典
+- 新增机台汇总 API 说明
+- 新增生产记录更新 API 说明
 
 ### 2025-12-05
 - 新增织造工段 API 文档
