@@ -1,6 +1,6 @@
 import React from 'react';
-import { WeavingCalculationResult, INITIAL_ADMIN_TEAM } from '../../weavingTypes';
-import { Coins, User, Users } from 'lucide-react';
+import { WeavingCalculationResult, INITIAL_ADMIN_TEAM, WEAVING_POSITION_CONFIG } from '../../weavingTypes';
+import { Coins, Users } from 'lucide-react';
 
 interface WeavingResultsProps {
     result: WeavingCalculationResult | null;
@@ -75,9 +75,10 @@ export const WeavingResults: React.FC<WeavingResultsProps> = ({ result }) => {
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {INITIAL_ADMIN_TEAM.map((person) => {
-                                const isLeader = person.role === '班长';
+                                const isLeader = person.position === 'admin_leader';
                                 const bonus = isLeader ? result.leaderBonus : result.memberBonus;
                                 const total = person.baseSalary + bonus; // Assuming full attendance for now
+                                const positionLabel = WEAVING_POSITION_CONFIG[person.position]?.label || person.position;
 
                                 return (
 
@@ -86,7 +87,7 @@ export const WeavingResults: React.FC<WeavingResultsProps> = ({ result }) => {
                                         <td className="px-4 py-3">
                                             <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold ${isLeader ? 'bg-violet-100 text-violet-800' : 'bg-slate-100 text-slate-700'
                                                 }`}>
-                                                {person.role}
+                                                {positionLabel}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 text-slate-600 tabular-nums">{isLeader ? '1.3' : '1.0'}</td>

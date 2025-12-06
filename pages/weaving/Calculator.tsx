@@ -10,14 +10,15 @@
  */
 import React, { useState, useMemo } from 'react';
 import { 
-    Calculator, Play, RotateCcw, TrendingUp, 
+    Calculator, Play, RotateCcw, 
     Info, ChevronRight, Percent, Target
 } from 'lucide-react';
 import { 
     WeavingConfig, 
     WeavingMonthlyData, 
     DEFAULT_WEAVING_CONFIG,
-    INITIAL_ADMIN_TEAM
+    INITIAL_ADMIN_TEAM,
+    WEAVING_POSITION_CONFIG
 } from '../../weavingTypes';
 import { calculateWeavingBonus } from '../../services/weavingCalcService';
 
@@ -313,9 +314,10 @@ export const WeavingCalculator = () => {
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {INITIAL_ADMIN_TEAM.map((person) => {
-                                            const isLeader = person.role === '班长';
+                                            const isLeader = person.position === 'admin_leader';
                                             const bonus = isLeader ? result.leaderBonus : result.memberBonus;
                                             const total = person.baseSalary + bonus;
+                                            const positionLabel = WEAVING_POSITION_CONFIG[person.position]?.label || person.position;
 
                                             return (
                                                 <tr key={person.name}>
@@ -324,7 +326,7 @@ export const WeavingCalculator = () => {
                                                         <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                                                             isLeader ? 'bg-violet-100 text-violet-700' : 'bg-slate-100 text-slate-600'
                                                         }`}>
-                                                            {person.role}
+                                                            {positionLabel}
                                                         </span>
                                                     </td>
                                                     <td className="py-3 text-right text-slate-600 tabular-nums">{person.baseSalary}</td>
