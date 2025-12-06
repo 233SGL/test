@@ -100,7 +100,8 @@ interface MachineCardProps {
 }
 
 const MachineCard: React.FC<MachineCardProps> = ({ machine, onStatusChange, onEdit }) => {
-  const statusConfig = STATUS_CONFIG[machine.status];
+  // 添加默认状态保护，防止未知状态导致崩溃
+  const statusConfig = STATUS_CONFIG[machine.status] || STATUS_CONFIG.idle;
   const StatusIcon = statusConfig.icon;
 
   return (

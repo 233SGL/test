@@ -464,9 +464,24 @@ app.get('/api/weaving/machines', async (req, res) => {
 app.put('/api/weaving/machines/:id', async (req, res) => {
   try {
     const { name, speedType, width, targetOutput, status } = req.body;
+    // 只更新提供的字段，保留未提供字段的原值
+    const updateFields = [];
+    const values = [req.params.id];
+    let paramIndex = 2;
+
+    if (name !== undefined) { updateFields.push(`name = $${paramIndex++}`); values.push(name); }
+    if (speedType !== undefined) { updateFields.push(`speed_type = $${paramIndex++}`); values.push(speedType); }
+    if (width !== undefined) { updateFields.push(`width = $${paramIndex++}`); values.push(width); }
+    if (targetOutput !== undefined) { updateFields.push(`target_output = $${paramIndex++}`); values.push(targetOutput); }
+    if (status !== undefined) { updateFields.push(`status = $${paramIndex++}`); values.push(status); }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: '没有提供要更新的字段' });
+    }
+
     const { rows } = await pool.query(
-      `UPDATE weaving_machines SET name = $2, speed_type = $3, width = $4, target_output = $5, status = $6 WHERE id = $1 RETURNING *`,
-      [req.params.id, name, speedType, width, targetOutput, status]
+      `UPDATE weaving_machines SET ${updateFields.join(', ')} WHERE id = $1 RETURNING *`,
+      values
     );
     if (!rows[0]) return res.status(404).json({ error: '机台不存在' });
     res.json(rows[0]);
