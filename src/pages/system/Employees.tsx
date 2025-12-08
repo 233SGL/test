@@ -162,9 +162,14 @@ export const Employees: React.FC = () => {
         e.preventDefault();
         if (!canManage) return;
         if (selectedWorkshopId && newFolderName) {
-            await addWorkshopFolder(selectedWorkshopId, newFolderName);
-            setNewFolderName('');
-            setIsFolderModalOpen(false);
+            try {
+                await addWorkshopFolder(selectedWorkshopId, newFolderName);
+                setNewFolderName('');
+                setIsFolderModalOpen(false);
+            } catch (error) {
+                console.error(error);
+                alert("创建文件夹失败，请重试");
+            }
         }
     };
 
@@ -172,8 +177,13 @@ export const Employees: React.FC = () => {
         e.stopPropagation();
         if (!canManage) return;
         if (confirm(`确定要删除文件夹 "${folder}" 吗？\n注意：这不会删除里面的员工，但他们的部门信息可能需要更新。`)) {
-            await deleteWorkshopFolder(wsId, folder);
-            if (selectedFolder === folder) setSelectedFolder(null);
+            try {
+                await deleteWorkshopFolder(wsId, folder);
+                if (selectedFolder === folder) setSelectedFolder(null);
+            } catch (error) {
+                console.error(error);
+                alert("删除文件夹失败");
+            }
         }
     };
 
@@ -181,23 +191,28 @@ export const Employees: React.FC = () => {
         e.preventDefault();
         if (!canManage) return;
         if (newWorkshopName && newWorkshopCode) {
-            await addWorkshop(newWorkshopName, newWorkshopCode);
-            setNewWorkshopName('');
-            setNewWorkshopCode('');
-            setIsWorkshopModalOpen(false);
+            try {
+                await addWorkshop(newWorkshopName, newWorkshopCode);
+                setNewWorkshopName('');
+                setNewWorkshopCode('');
+                setIsWorkshopModalOpen(false);
+            } catch (error) {
+                console.error(error);
+                alert("创建工段失败，Code 可能已存在");
+            }
         }
     };
 
     const handleDeleteWorkshop = async (e: React.MouseEvent, wsId: string, wsName: string, wsCode: string) => {
         e.stopPropagation();
         if (!canManage) return;
-        
+
         // 保护核心工段不被删除
         if (PROTECTED_WORKSHOP_CODES.includes(wsCode)) {
             alert(`❌ 无法删除核心工段\n\n「${wsName}」是系统核心工段，与路由和功能页面绑定。\n删除后会导致系统功能异常。\n\n如需调整，请联系系统管理员。`);
             return;
         }
-        
+
         if (confirm(`⚠️ 严重警告：确定要删除整个工段 "${wsName}" 吗？\n此操作不可逆！\n请确保该工段下的所有员工已被转移或删除。`)) {
             await deleteWorkshop(wsId);
             if (selectedWorkshopId === wsId) setSelectedWorkshopId(null);
@@ -254,19 +269,34 @@ export const Employees: React.FC = () => {
                                         <span>{ws.name}</span>
                                     </div>
                                     {canManage && (
-                                        isProtectedWorkshop(ws.code) ? (
-                                            <span className="text-slate-300 p-1" title="核心工段，不可删除">
-                                                <Lock size={14} />
-                                            </span>
-                                        ) : (
+                                        <div className="flex items-center gap-1">
+                                            {/* 快捷新建文件夹按钮 */}
                                             <button
-                                                onClick={(e) => handleDeleteWorkshop(e, ws.id, ws.name, ws.code)}
-                                                className="text-slate-300 hover:text-red-500 opacity-0 group-hover/ws:opacity-100 transition-opacity p-1"
-                                                title="删除工段"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedWorkshopId(ws.id);
+                                                    setIsFolderModalOpen(true);
+                                                }}
+                                                className="text-slate-300 hover:text-blue-500 opacity-0 group-hover/ws:opacity-100 transition-opacity p-1"
+                                                title="在该工段下新建文件夹"
                                             >
-                                                <Trash2 size={14} />
+                                                <FolderPlus size={14} />
                                             </button>
-                                        )
+
+                                            {isProtectedWorkshop(ws.code) ? (
+                                                <span className="text-slate-300 p-1" title="核心工段，不可删除">
+                                                    <Lock size={14} />
+                                                </span>
+                                            ) : (
+                                                <button
+                                                    onClick={(e) => handleDeleteWorkshop(e, ws.id, ws.name, ws.code)}
+                                                    className="text-slate-300 hover:text-red-500 opacity-0 group-hover/ws:opacity-100 transition-opacity p-1"
+                                                    title="删除工段"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
 
@@ -492,17 +522,47 @@ export const Employees: React.FC = () => {
                                         </select>
                                     </div>
                                     <div>
-                                        <label htmlFor="employee-department" className="block text-sm font-medium text-slate-700 mb-1">部门/文件夹 (可手填)</label>
-                                        <input
-                                            id="employee-department"
-                                            list="dept-list"
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                                            value={formData.department}
-                                            onChange={e => setFormData({ ...formData, department: e.target.value })}
-                                        />
-                                        <datalist id="dept-list">
-                                            {workshops.find(w => w.id === formData.workshopId)?.departments.map(d => <option key={d} value={d} />)}
-                                        </datalist>
+                                        <label htmlFor="employee-department" className="block text-sm font-medium text-slate-700 mb-1">部门/文件夹 (分组)</label>
+                                        {/* 如果工段有文件夹，则强制选择；否则允许输入 */}
+                                        {(() => {
+                                            const currentWs = workshops.find(w => w.id === formData.workshopId);
+                                            const departments = currentWs?.departments || [];
+
+                                            // 只有当有定义的文件夹时，才使用下拉框
+                                            if (departments.length > 0) {
+                                                return (
+                                                    <select
+                                                        id="employee-department"
+                                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                        value={formData.department}
+                                                        onChange={e => setFormData({ ...formData, department: e.target.value })}
+                                                    >
+                                                        <option value="">-- 未分组 --</option>
+                                                        {departments.map(d => (
+                                                            <option key={d} value={d}>{d}</option>
+                                                        ))}
+                                                        {/* 如果当前部门不在列表中（历史数据），也显示出来 */}
+                                                        {formData.department && !departments.includes(formData.department) && (
+                                                            <option value={formData.department}>{formData.department} (历史数据)</option>
+                                                        )}
+                                                    </select>
+                                                );
+                                            } else {
+                                                return (
+                                                    <div className="relative">
+                                                        <input
+                                                            id="employee-department"
+                                                            type="text"
+                                                            placeholder="该工段暂无文件夹，可直接输入或在左侧新建"
+                                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                                            value={formData.department}
+                                                            onChange={e => setFormData({ ...formData, department: e.target.value })}
+                                                        />
+                                                        <p className="text-xs text-slate-400 mt-1">提示：在左侧栏点击 "+" 号可新建分组文件夹</p>
+                                                    </div>
+                                                );
+                                            }
+                                        })()}
                                     </div>
                                     <div>
                                         <label htmlFor="employee-position" className="block text-sm font-medium text-slate-700 mb-1">职位</label>
@@ -590,80 +650,80 @@ export const Employees: React.FC = () => {
 
                             {/* Score and Hours - 仅定型工段显示 */}
                             {workshops.find(w => w.id === formData.workshopId)?.code !== 'weaving' && (
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-bold text-slate-500 uppercase flex items-center gap-2">
-                                    <CreditCard size={16} /> 积分与工时标准
-                                </h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                                        <label htmlFor="employee-base-score" className="block text-sm font-medium text-slate-700 mb-2">技能基础分 (Standard)</label>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                id="employee-base-score"
-                                                type="number"
-                                                className="w-full text-lg font-bold border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-blue-600"
-                                                value={formData.standardBaseScore} onChange={e => setFormData({ ...formData, standardBaseScore: parseInt(e.target.value) || 0 })}
-                                            />
-                                            <span className="text-slate-400 text-sm whitespace-nowrap">分</span>
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-bold text-slate-500 uppercase flex items-center gap-2">
+                                        <CreditCard size={16} /> 积分与工时标准
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                                            <label htmlFor="employee-base-score" className="block text-sm font-medium text-slate-700 mb-2">技能基础分 (Standard)</label>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    id="employee-base-score"
+                                                    type="number"
+                                                    className="w-full text-lg font-bold border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-blue-600"
+                                                    value={formData.standardBaseScore} onChange={e => setFormData({ ...formData, standardBaseScore: parseInt(e.target.value) || 0 })}
+                                                />
+                                                <span className="text-slate-400 text-sm whitespace-nowrap">分</span>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                                        <label htmlFor="employee-daily-hours" className="block text-sm font-medium text-slate-700 mb-2">每日标准工时</label>
-                                        <div className="flex items-center gap-2">
-                                            <Clock size={20} className="text-slate-400" />
-                                            <input
-                                                id="employee-daily-hours"
-                                                type="number" min="0" max="24" step="0.5"
-                                                className="w-full text-lg font-bold border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-slate-700"
-                                                value={formData.expectedDailyHours} onChange={e => setFormData({ ...formData, expectedDailyHours: parseFloat(e.target.value) || 0 })}
-                                            />
-                                            <span className="text-slate-400 text-sm whitespace-nowrap">小时</span>
+                                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                                            <label htmlFor="employee-daily-hours" className="block text-sm font-medium text-slate-700 mb-2">每日标准工时</label>
+                                            <div className="flex items-center gap-2">
+                                                <Clock size={20} className="text-slate-400" />
+                                                <input
+                                                    id="employee-daily-hours"
+                                                    type="number" min="0" max="24" step="0.5"
+                                                    className="w-full text-lg font-bold border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-slate-700"
+                                                    value={formData.expectedDailyHours} onChange={e => setFormData({ ...formData, expectedDailyHours: parseFloat(e.target.value) || 0 })}
+                                                />
+                                                <span className="text-slate-400 text-sm whitespace-nowrap">小时</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
                             )}
 
                             {/* 织造工段专用：基本工资和分配系数 */}
                             {workshops.find(w => w.id === formData.workshopId)?.code === 'weaving' && (
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-bold text-slate-500 uppercase flex items-center gap-2">
-                                    <CreditCard size={16} /> 薪资与奖金分配
-                                </h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                                        <label htmlFor="employee-base-salary" className="block text-sm font-medium text-slate-700 mb-2">基本工资</label>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                id="employee-base-salary"
-                                                type="number"
-                                                className="w-full text-lg font-bold border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-blue-600"
-                                                value={formData.baseSalary || 0}
-                                                onChange={e => setFormData({ ...formData, baseSalary: parseInt(e.target.value) || 0 })}
-                                            />
-                                            <span className="text-slate-400 text-sm whitespace-nowrap">元</span>
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-bold text-slate-500 uppercase flex items-center gap-2">
+                                        <CreditCard size={16} /> 薪资与奖金分配
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                                            <label htmlFor="employee-base-salary" className="block text-sm font-medium text-slate-700 mb-2">基本工资</label>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    id="employee-base-salary"
+                                                    type="number"
+                                                    className="w-full text-lg font-bold border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-blue-600"
+                                                    value={formData.baseSalary || 0}
+                                                    onChange={e => setFormData({ ...formData, baseSalary: parseInt(e.target.value) || 0 })}
+                                                />
+                                                <span className="text-slate-400 text-sm whitespace-nowrap">元</span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 mt-2">班长3500，班员2500</p>
                                         </div>
-                                        <p className="text-xs text-slate-500 mt-2">班长3500，班员2500</p>
-                                    </div>
-                                    <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                                        <label htmlFor="employee-coefficient" className="block text-sm font-medium text-slate-700 mb-2">分配系数</label>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                id="employee-coefficient"
-                                                type="number"
-                                                step="0.1"
-                                                min="0"
-                                                className="w-full text-lg font-bold border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-blue-600"
-                                                value={formData.coefficient || 1.0}
-                                                onChange={e => setFormData({ ...formData, coefficient: parseFloat(e.target.value) || 1.0 })}
-                                            />
-                                            <span className="text-slate-400 text-sm whitespace-nowrap">倍</span>
+                                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                                            <label htmlFor="employee-coefficient" className="block text-sm font-medium text-slate-700 mb-2">分配系数</label>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    id="employee-coefficient"
+                                                    type="number"
+                                                    step="0.1"
+                                                    min="0"
+                                                    className="w-full text-lg font-bold border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none text-blue-600"
+                                                    value={formData.coefficient || 1.0}
+                                                    onChange={e => setFormData({ ...formData, coefficient: parseFloat(e.target.value) || 1.0 })}
+                                                />
+                                                <span className="text-slate-400 text-sm whitespace-nowrap">倍</span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 mt-2">班长1.3，班员1.0</p>
                                         </div>
-                                        <p className="text-xs text-slate-500 mt-2">班长1.3，班员1.0</p>
                                     </div>
                                 </div>
-                            </div>
                             )}
 
                             <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">

@@ -167,6 +167,33 @@ app.get('/api/workshops', async (req, res) => {
   }
 });
 
+/**
+ * PUT /api/workshops/:id
+ * 更新或创建工段（支持更新部门/文件夹）
+ */
+app.put('/api/workshops/:id', async (req, res) => {
+  try {
+    const { name, code, departments } = req.body;
+
+    // 使用 UPSERT 确保新工段也能被创建
+    // 注意：departments 列可能是 JSONB 类型，需要 stringify
+    const { rows } = await pool.query(
+      `INSERT INTO workshops (id, name, code, departments) 
+       VALUES ($1, $2, $3, $4::jsonb)
+       ON CONFLICT (id) DO UPDATE SET 
+         name = $2, 
+         code = $3, 
+         departments = $4::jsonb
+       RETURNING *`,
+      [req.params.id, name, code, JSON.stringify(departments)]
+    );
+
+    res.json(rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ========================================
 // 系统设置 API
 // ========================================

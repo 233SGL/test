@@ -2,12 +2,12 @@
 export default {
   content: [
     "./index.html",
-    "./index.tsx",
-    "./App.tsx",
-    "./components/**/*.{js,ts,jsx,tsx}",
-    "./contexts/**/*.{js,ts,jsx,tsx}",
-    "./pages/**/*.{js,ts,jsx,tsx}",
-    "./services/**/*.{js,ts,jsx,tsx}",
+    "./src/index.tsx",
+    "./src/App.tsx",
+    "./src/components/**/*.{js,ts,jsx,tsx}",
+    "./src/contexts/**/*.{js,ts,jsx,tsx}",
+    "./src/pages/**/*.{js,ts,jsx,tsx}",
+    "./src/services/**/*.{js,ts,jsx,tsx}",
   ],
   // 启用暗色模式 (可选，通过 class 控制)
   darkMode: 'class',

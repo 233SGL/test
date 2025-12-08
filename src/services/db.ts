@@ -209,7 +209,16 @@ export class DatabaseService {
 
   public async saveWorkshops(workshops: Workshop[]): Promise<void> {
     await this.ensureConnection();
-    console.warn('saveWorkshops not yet implemented in backend');
+    // 并行保存所有工段
+    await Promise.all(workshops.map(ws =>
+      fetch(`${API_BASE}/workshops/${ws.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ws)
+      }).then(res => {
+        if (!res.ok) throw new Error(`Failed to save workshop ${ws.name}`);
+      })
+    ));
   }
 
   // === System Users ===
