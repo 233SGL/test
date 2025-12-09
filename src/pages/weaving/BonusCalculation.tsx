@@ -374,18 +374,34 @@ export const BonusCalculation: React.FC = () => {
       setConfig(configData);
       setEmployees(employeesData);
 
-      if (summaryData) {
-        setManualInput(prev => ({
-          ...prev,
-          netFormationRate: summaryData.netFormationRate || prev.netFormationRate,
-          operationRate: summaryData.operationRate || prev.operationRate,
-          totalEquivalent: summaryData.totalEquivalent || prev.totalEquivalent,
+      // 关键修复：先重置为零，再用实际数据覆盖
+      // 解决切换月份时旧数据残留问题
+      if (summaryData && summaryData.totalNets > 0) {
+        // 有生产记录，使用实际数据
+        setManualInput({
+          netFormationRate: summaryData.netFormationRate || 0,
+          operationRate: summaryData.operationRate || 78,
+          totalEquivalent: summaryData.totalEquivalent || 0,
           totalArea: summaryData.totalArea || 0,
           totalNets: summaryData.totalNets || 0,
           qualifiedNets: summaryData.qualifiedNets || 0,
-          activeMachines: summaryData.activeMachines || prev.activeMachines,
-          actualOperators: summaryData.actualOperators || prev.actualOperators
-        }));
+          activeMachines: summaryData.activeMachines || 0,
+          actualOperators: summaryData.actualOperators || 0,
+          targetOutput: 0
+        });
+      } else {
+        // 无生产记录，重置为零
+        setManualInput({
+          netFormationRate: 0,
+          operationRate: 0,
+          totalEquivalent: 0,
+          totalArea: 0,
+          totalNets: 0,
+          qualifiedNets: 0,
+          activeMachines: 0,
+          actualOperators: 0,
+          targetOutput: 0
+        });
       }
     } catch (err) {
       console.error('加载数据失败:', err);
