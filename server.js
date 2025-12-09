@@ -1755,7 +1755,13 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'dist')));
 
   // 所有非 /api 的请求都返回 index.html（支持前端路由）
-  app.get('*', (req, res) => {
+  // 重要：必须显式排除 /api 路由，避免 API 请求返回 HTML
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      // API 路由，返回 404 JSON（说明该接口不存在）
+      return res.status(404).json({ error: `API endpoint not found: ${req.path}` });
+    }
+    // 非 API 路由，返回前端页面
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
   });
 
