@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "server": "node server.js",
     "start": "concurrently \"npm run server\" \"npm run dev\"",
+    "start:prod": "NODE_ENV=production node server.js",
     "test": "vitest run",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

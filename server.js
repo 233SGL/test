@@ -1739,6 +1739,30 @@ app.post('/api/admin/restore/:filename', async (req, res) => {
 });
 
 // ========================================
+// 生产环境静态文件托管
+// ========================================
+
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+/**
+ * 生产环境下托管前端静态文件
+ * 开发环境使用 Vite 代理，不需要这个
+ */
+if (process.env.NODE_ENV === 'production') {
+  // 托管 dist 目录下的静态文件
+  app.use(express.static(path.join(__dirname, 'dist')));
+
+  // 所有非 /api 的请求都返回 index.html（支持前端路由）
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  });
+
+  console.log('生产模式：已启用静态文件托管 (dist/)');
+}
+
+// ========================================
 // 启动服务器
 // ========================================
 
@@ -1748,4 +1772,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`后端服务器已启动: http://localhost:${PORT}`);
   console.log(`API 端点地址: http://localhost:${PORT}/api/*`);
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`前端页面地址: http://localhost:${PORT}/`);
+  }
 });
