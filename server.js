@@ -34,6 +34,12 @@ const app = express();
 app.use(cors());        // 允许跨域请求
 app.use(express.json()); // 解析 JSON 请求体
 
+// 🔴 最早的请求日志（调试用：确认请求到达服务器）
+app.use((req, res, next) => {
+  console.log(`[REQ] ${req.method} ${req.path}`);
+  next();
+});
+
 // 安全头部中间件
 app.use((req, res, next) => {
   // 防止 MIME 类型嗅探攻击
