@@ -45,6 +45,15 @@ app.use((req, res, next) => {
   next();
 });
 
+// 请求日志中间件（生产环境调试用）
+app.use((req, res, next) => {
+  // 只记录 API 请求，避免日志过多
+  if (req.path.startsWith('/api')) {
+    console.log(`[API] ${req.method} ${req.path}`);
+  }
+  next();
+});
+
 // 确保 JSON 响应使用正确的 charset
 app.use((req, res, next) => {
   const originalJson = res.json.bind(res);
@@ -2025,8 +2034,10 @@ if (process.env.NODE_ENV === 'production') {
   // 所有非 /api 的请求都返回 index.html（支持前端路由）
   // 重要：必须显式排除 /api 路由，避免 API 请求返回 HTML
   app.get('*', (req, res, next) => {
+    console.log(`[Catch-All] ${req.method} ${req.path}`);
     if (req.path.startsWith('/api')) {
       // API 路由，返回 404 JSON（说明该接口不存在）
+      console.log(`[Catch-All] API route not found: ${req.path}`);
       return res.status(404).json({ error: `API endpoint not found: ${req.path}` });
     }
     // 非 API 路由，返回前端页面
