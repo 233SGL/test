@@ -851,7 +851,9 @@ app.get('/api/weaving/employees', async (req, res) => {
       status: row.status,
       notes: row.notes,
       machineId: row.machine_id,
-      team: row.team
+      team: row.team,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
     }));
     res.json(employees);
   } catch (error) {
@@ -1012,7 +1014,8 @@ app.get('/api/weaving/config', async (req, res) => {
       leaderCoef: parseFloat(rows[0].leader_coef),
       memberCoef: parseFloat(rows[0].member_coef),
       leaderBaseSalary: parseFloat(rows[0].leader_base_salary),
-      memberBaseSalary: parseFloat(rows[0].member_base_salary)
+      memberBaseSalary: parseFloat(rows[0].member_base_salary),
+      updatedAt: rows[0].updated_at
     };
     res.json(config);
   } catch (error) {
