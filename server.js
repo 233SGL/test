@@ -55,12 +55,32 @@ app.use((req, res, next) => {
   next();
 });
 
+// ========================================
+// 数据库连接配置
+// ========================================
+
+// 检查 DATABASE_URL 环境变量
+// Zeabur 等云平台通过环境变量提供，本地开发通过 .env.server 文件
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  console.error('❌ 错误：DATABASE_URL 环境变量未设置');
+  console.error('   请在 Zeabur 控制面板中设置 DATABASE_URL 环境变量');
+  console.error('   或确保 .env.server 文件存在且包含 DATABASE_URL');
+  // 不立即退出，让服务器启动以便查看日志
+} else {
+  console.log('✅ DATABASE_URL 已配置');
+  // 只显示部分信息，避免泄露密码
+  const urlPreview = databaseUrl.substring(0, 30) + '...';
+  console.log(`   连接地址: ${urlPreview}`);
+}
+
 /**
  * 数据库连接池配置
  * 使用 Supabase Session Pooler 连接
  */
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: databaseUrl,
   ssl: { rejectUnauthorized: false }
 });
 
