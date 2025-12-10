@@ -27,6 +27,14 @@ import cron from 'node-cron';
 // 加载环境变量配置
 dotenv.config({ path: '.env.server' });
 
+// 🚀 最早的启动日志 - 确认 Node.js 进程开始执行
+console.log('===========================================');
+console.log('[STARTUP] Node.js 进程已启动');
+console.log('[STARTUP] 时间:', new Date().toISOString());
+console.log('[STARTUP] NODE_ENV:', process.env.NODE_ENV);
+console.log('[STARTUP] PORT:', process.env.PORT);
+console.log('===========================================');
+
 const { Pool } = pg;
 const app = express();
 
