@@ -941,7 +941,9 @@ app.get('/api/weaving/machines', async (req, res) => {
       effectiveWidth: parseFloat(row.effective_width) || 7.7,
       speedWeftPerMin: parseInt(row.speed_weft_per_min) || 41,
       targetOutput: parseFloat(row.target_output),
-      status: row.status
+      status: row.status,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
     }));
     res.json(machines);
   } catch (error) {
