@@ -23,6 +23,7 @@ export const Login: React.FC = () => {
     const [pinInput, setPinInput] = useState('');
     const [error, setError] = useState('');
     const [failedAttempts, setFailedAttempts] = useState(0);
+    const [submitting, setSubmitting] = useState(false);
 
     // Pre-connect DB on load
     useEffect(() => {
@@ -46,59 +47,66 @@ export const Login: React.FC = () => {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedUser) return;
+        if (!selectedUser || submitting) return;
 
-        if (pinInput === selectedUser.pinCode) {
-            // 检查是否有任何权限
-            const defaultRoute = getDefaultRoute(selectedUser.permissions);
-            if (defaultRoute === '/login') {
-                setError('此账号无任何权限，请联系管理员');
-                setFailedAttempts(0);
-                return;
-            }
+        setSubmitting(true);
+        setError('');
 
-            // 记录登录成功
-            try {
-                await fetch('/api/admin/login-record', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: selectedUser.id,
-                        username: selectedUser.displayName,
-                        action: 'LOGIN'
-                    })
-                });
-            } catch (err) {
-                console.error('记录登录失败:', err);
-            }
+        try {
+            if (pinInput === selectedUser.pinCode) {
+                // 检查是否有任何权限
+                const defaultRoute = getDefaultRoute(selectedUser.permissions);
+                if (defaultRoute === '/login') {
+                    setError('此账号无任何权限，请联系管理员');
+                    setFailedAttempts(0);
+                    return;
+                }
 
-            login(selectedUser);
-            navigate(defaultRoute);
-        } else {
-            const newAttempts = failedAttempts + 1;
-            setFailedAttempts(newAttempts);
+                // 记录登录成功
+                try {
+                    await fetch('/api/admin/login-record', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: selectedUser.id,
+                            username: selectedUser.displayName,
+                            action: 'LOGIN'
+                        })
+                    });
+                } catch (err) {
+                    console.error('记录登录失败:', err);
+                }
 
-            // 记录登录失败
-            try {
-                await fetch('/api/admin/login-record', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: selectedUser.id,
-                        username: selectedUser.displayName,
-                        action: 'LOGIN_FAILED'
-                    })
-                });
-            } catch (err) {
-                console.error('记录登录失败:', err);
-            }
-
-            if (newAttempts >= 3) {
-                setError('PIN 码错误，如需修改密码，请联系管理员');
+                login(selectedUser);
+                navigate(defaultRoute);
             } else {
-                setError('PIN 码错误');
+                const newAttempts = failedAttempts + 1;
+                setFailedAttempts(newAttempts);
+
+                // 记录登录失败
+                try {
+                    await fetch('/api/admin/login-record', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: selectedUser.id,
+                            username: selectedUser.displayName,
+                            action: 'LOGIN_FAILED'
+                        })
+                    });
+                } catch (err) {
+                    console.error('记录登录失败:', err);
+                }
+
+                if (newAttempts >= 3) {
+                    setError('PIN 码错误，如需修改密码，请联系管理员');
+                } else {
+                    setError('PIN 码错误');
+                }
+                setPinInput('');
             }
-            setPinInput('');
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -234,9 +242,17 @@ export const Login: React.FC = () => {
                                 </div>
                                 <button
                                     type="submit"
-                                    className="btn-primary w-full h-12 text-base shadow-lg shadow-indigo-200"
+                                    disabled={submitting}
+                                    className="btn-primary w-full h-12 text-base shadow-lg shadow-indigo-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
-                                    登 录
+                                    {submitting ? (
+                                        <>
+                                            <Loader2 size={18} className="animate-spin" />
+                                            登录中...
+                                        </>
+                                    ) : (
+                                        '登 录'
+                                    )}
                                 </button>
                             </form>
                         </div>
