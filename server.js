@@ -65,6 +65,45 @@ const pool = new Pool({
 });
 
 // ========================================
+// 认证中间件
+// ========================================
+
+/**
+ * 管理员权限验证中间件
+ * 验证请求头中的 x-user-id 对应的用户是否有 MANAGE_SYSTEM 权限
+ */
+const requireAdminAuth = async (req, res, next) => {
+  try {
+    const userId = req.headers['x-user-id'];
+
+    if (!userId) {
+      return res.status(401).json({ error: '未授权：缺少用户标识' });
+    }
+
+    // 查询用户权限
+    const { rows } = await pool.query(
+      'SELECT permissions FROM system_users WHERE id = $1',
+      [userId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(401).json({ error: '未授权：用户不存在' });
+    }
+
+    const permissions = rows[0].permissions || [];
+
+    // 检查是否有 MANAGE_SYSTEM 权限
+    if (!permissions.includes('MANAGE_SYSTEM')) {
+      return res.status(403).json({ error: '权限不足：需要系统管理权限' });
+    }
+
+    next();
+  } catch (error) {
+    res.status(500).json({ error: '权限验证失败' });
+  }
+};
+
+// ========================================
 // 健康检查 API
 // ========================================
 
@@ -1419,7 +1458,7 @@ app.delete('/api/admin/session/:sessionId', async (req, res) => {
  * GET /api/admin/database/tables
  * 获取数据库表结构信息
  */
-app.get('/api/admin/database/tables', async (req, res) => {
+app.get('/api/admin/database/tables', requireAdminAuth, async (req, res) => {
   try {
     // 获取所有表及其列信息
     const { rows: tables } = await pool.query(`
@@ -1451,7 +1490,7 @@ app.get('/api/admin/database/tables', async (req, res) => {
  * GET /api/admin/database/tables/:tableName
  * 获取指定表的详细结构
  */
-app.get('/api/admin/database/tables/:tableName', async (req, res) => {
+app.get('/api/admin/database/tables/:tableName', requireAdminAuth, async (req, res) => {
   try {
     const { tableName } = req.params;
 
@@ -1480,7 +1519,7 @@ app.get('/api/admin/database/tables/:tableName', async (req, res) => {
  * GET /api/admin/database/tables/:tableName/data
  * 获取表数据预览（只读，限制100条）
  */
-app.get('/api/admin/database/tables/:tableName/data', async (req, res) => {
+app.get('/api/admin/database/tables/:tableName/data', requireAdminAuth, async (req, res) => {
   try {
     const { tableName } = req.params;
     const { page = 1, limit = 20 } = req.query;

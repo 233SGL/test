@@ -4,6 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { Database, Table, RefreshCw, ChevronRight, Eye, ChevronLeft } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 const API_BASE = '/api/admin';
 
@@ -21,6 +22,7 @@ interface ColumnInfo {
 }
 
 export const DatabaseViewer: React.FC = () => {
+    const { user } = useAuth();
     const [tables, setTables] = useState<TableInfo[]>([]);
     const [selectedTable, setSelectedTable] = useState<string | null>(null);
     const [columns, setColumns] = useState<ColumnInfo[]>([]);
@@ -29,10 +31,25 @@ export const DatabaseViewer: React.FC = () => {
     const [dataPage, setDataPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'structure' | 'data'>('structure');
+    const [authError, setAuthError] = useState<string | null>(null);
+
+    // 获取认证 headers
+    const getAuthHeaders = () => ({
+        'Content-Type': 'application/json',
+        'x-user-id': user?.id || ''
+    });
 
     const fetchTables = async () => {
         try {
-            const res = await fetch(`${API_BASE}/database/tables`);
+            setAuthError(null);
+            const res = await fetch(`${API_BASE}/database/tables`, {
+                headers: getAuthHeaders()
+            });
+            if (res.status === 401 || res.status === 403) {
+                const err = await res.json();
+                setAuthError(err.error || '权限不足');
+                return;
+            }
             if (res.ok) setTables(await res.json());
         } catch (err) {
             console.error('获取表列表失败:', err);
@@ -43,7 +60,9 @@ export const DatabaseViewer: React.FC = () => {
 
     const fetchTableDetails = async (tableName: string) => {
         try {
-            const res = await fetch(`${API_BASE}/database/tables/${tableName}`);
+            const res = await fetch(`${API_BASE}/database/tables/${tableName}`, {
+                headers: getAuthHeaders()
+            });
             if (res.ok) {
                 const data = await res.json();
                 setColumns(data.columns || []);
@@ -55,7 +74,9 @@ export const DatabaseViewer: React.FC = () => {
 
     const fetchTableData = async (tableName: string, page: number = 1) => {
         try {
-            const res = await fetch(`${API_BASE}/database/tables/${tableName}/data?page=${page}&limit=20`);
+            const res = await fetch(`${API_BASE}/database/tables/${tableName}/data?page=${page}&limit=20`, {
+                headers: getAuthHeaders()
+            });
             if (res.ok) {
                 const result = await res.json();
                 setData(result.data || []);
@@ -110,8 +131,8 @@ export const DatabaseViewer: React.FC = () => {
                                 key={table.table_name}
                                 onClick={() => { setSelectedTable(table.table_name); setDataPage(1); }}
                                 className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between transition-colors ${selectedTable === table.table_name
-                                        ? 'bg-primary-100 text-primary-700 font-medium'
-                                        : 'hover:bg-slate-50 text-slate-600'
+                                    ? 'bg-primary-100 text-primary-700 font-medium'
+                                    : 'hover:bg-slate-50 text-slate-600'
                                     }`}
                             >
                                 <span className="flex items-center gap-2">
