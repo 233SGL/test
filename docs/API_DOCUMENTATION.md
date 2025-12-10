@@ -594,7 +594,9 @@ PUT /api/weaving/machines/:id
 {
   "name": "1号机",
   "speedType": "H2",
-  "width": 8.5,
+  "width": 7.7,
+  "effectiveWidth": 7.7,
+  "speedWeftPerMin": 41,
   "targetOutput": 6450,
   "status": "running"
 }
@@ -606,7 +608,9 @@ PUT /api/weaving/machines/:id
 |------|------|------|------|
 | `name` | string | 否 | 机台名称 |
 | `speedType` | string | 否 | 速度类型: H2/H5 |
-| `width` | number | 否 | 织造宽度 (m) |
+| `width` | number | 否 | 织机宽度 (m)，仅记录 |
+| `effectiveWidth` | number | 否 | 有效幅宽 (m)，用于产量计算 |
+| `speedWeftPerMin` | number | 否 | 速度 (纬/分)，H2≈41，H5≈23 |
 | `targetOutput` | number | 否 | 月目标产量 (㎡) |
 | `status` | string | 否 | 状态: running/threading/maintenance/idle |
 
@@ -833,9 +837,12 @@ GET /api/admin/audit-logs
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `page` | number | 否 | 页码，默认1 |
-| `limit` | number | 否 | 每页数量，默认20 |
-| `action` | string | 否 | 操作类型: CREATE/UPDATE/DELETE/LOGIN/LOGOUT |
-| `targetType` | string | 否 | 目标类型: employee/workshop/user/settings |
+| `limit` | number | 否 | 每页数量，默认50 |
+| `action` | string | 否 | 操作类型: CREATE/UPDATE/DELETE/LOGIN/LOGOUT/LOGIN_FAILED/BACKUP/RESTORE/ADMIN_ACCESS |
+| `targetType` | string | 否 | 目标类型: employee/workshop/user/settings/backup/system/weaving_employee/weaving_machine等 |
+| `search` | string | 否 | 搜索关键词（匹配用户名或目标名称） |
+| `dateFrom` | string | 否 | 开始日期 (YYYY-MM-DD) |
+| `dateTo` | string | 否 | 结束日期 (YYYY-MM-DD)
 
 **响应示例**:
 ```json
