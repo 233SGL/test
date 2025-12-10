@@ -208,12 +208,12 @@ export const DatabaseViewer: React.FC = () => {
                                 </div>
                             ) : (
                                 <>
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-sm">
-                                            <thead className="bg-slate-50">
+                                    <div className="overflow-x-auto max-w-full border border-slate-200 rounded-lg">
+                                        <table className="w-full text-sm whitespace-nowrap">
+                                            <thead className="bg-slate-50 sticky top-0">
                                                 <tr>
                                                     {data[0] && Object.keys(data[0]).map(key => (
-                                                        <th key={key} className="px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">
+                                                        <th key={key} className="px-4 py-2.5 text-left font-semibold text-slate-600 border-b border-slate-200 min-w-[100px]">
                                                             {key}
                                                         </th>
                                                     ))}
@@ -221,10 +221,18 @@ export const DatabaseViewer: React.FC = () => {
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
                                                 {data.map((row, i) => (
-                                                    <tr key={i} className="hover:bg-slate-50">
-                                                        {Object.values(row).map((val: any, j) => (
-                                                            <td key={j} className="px-3 py-2 text-slate-600 max-w-[200px] truncate" title={String(val)}>
-                                                                {typeof val === 'object' ? JSON.stringify(val) : String(val ?? '-')}
+                                                    <tr key={i} className="hover:bg-blue-50/50 transition-colors">
+                                                        {Object.entries(row).map(([key, val]: [string, any], j) => (
+                                                            <td
+                                                                key={j}
+                                                                className="px-4 py-2.5 text-slate-600 font-mono text-xs"
+                                                                title={typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val ?? '-')}
+                                                            >
+                                                                {typeof val === 'object'
+                                                                    ? <span className="text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">{JSON.stringify(val).slice(0, 50)}...</span>
+                                                                    : key.includes('_at') && val
+                                                                        ? new Date(val).toLocaleString('zh-CN')
+                                                                        : String(val ?? '-')}
                                                             </td>
                                                         ))}
                                                     </tr>

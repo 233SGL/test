@@ -16,7 +16,8 @@ import {
   Download,
   RefreshCw,
   X,
-  Save
+  Save,
+  CalendarDays
 } from 'lucide-react';
 
 // ========================================
@@ -240,6 +241,7 @@ export const ProductionRecords: React.FC = () => {
 
         {/* 月份选择器 - 下拉框样式 */}
         <div className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
+          <CalendarDays size={18} className="text-slate-400" />
           <div className="flex items-center gap-2">
             <label htmlFor="records-year" className="text-sm font-semibold text-slate-600">年份</label>
             <select
@@ -421,10 +423,10 @@ export const ProductionRecords: React.FC = () => {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${record.qualityGrade === 'A'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : record.qualityGrade === 'B'
-                            ? 'bg-amber-100 text-amber-700'
-                            : 'bg-red-100 text-red-700'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : record.qualityGrade === 'B'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-red-100 text-red-700'
                         }`}>
                         {record.qualityGrade}
                       </span>

@@ -15,7 +15,8 @@ import {
   CheckCircle,
   Loader2,
   BarChart3,
-  RefreshCw
+  RefreshCw,
+  CalendarDays
 } from 'lucide-react';
 
 // ========================================
@@ -273,6 +274,7 @@ export const MonthlySummary: React.FC = () => {
 
         {/* 月份选择器 - 下拉框样式 */}
         <div className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
+          <CalendarDays size={18} className="text-slate-400" />
           <div className="flex items-center gap-2">
             <label htmlFor="summary-year" className="text-sm font-semibold text-slate-600">年份</label>
             <select
@@ -401,9 +403,9 @@ export const MonthlySummary: React.FC = () => {
                   return (
                     <div key={stat.machineId} className="flex items-center gap-4">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${index === 0 ? 'bg-amber-100 text-amber-700' :
-                          index === 1 ? 'bg-slate-200 text-slate-600' :
-                            index === 2 ? 'bg-orange-100 text-orange-700' :
-                              'bg-slate-100 text-slate-500'
+                        index === 1 ? 'bg-slate-200 text-slate-600' :
+                          index === 2 ? 'bg-orange-100 text-orange-700' :
+                            'bg-slate-100 text-slate-500'
                         }`}>
                         {index + 1}
                       </div>

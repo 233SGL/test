@@ -17,7 +17,8 @@ import {
   RefreshCw,
   Settings,
   X,
-  Save
+  Save,
+  CalendarDays
 } from 'lucide-react';
 
 // ========================================
@@ -564,6 +565,7 @@ export const BonusCalculation: React.FC = () => {
 
         {/* 月份选择器 */}
         <div className="flex items-center gap-2">
+          <CalendarDays size={18} className="text-slate-400" />
           <label htmlFor="bonus-year" className="sr-only">年份</label>
           <select
             id="bonus-year"
