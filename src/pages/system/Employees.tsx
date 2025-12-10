@@ -309,21 +309,29 @@ export const Employees: React.FC = () => {
                3. Delete old folder
             */
 
-            await addWorkshopFolder(selectedWorkshopId, editingFolder.name);
+            // 使用原子 API 进行文件夹重命名（安全改进）
+            const response = await fetch(`/api/workshops/${selectedWorkshopId}/rename-folder`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    oldName: editingFolder.originalName,
+                    newName: editingFolder.name
+                })
+            });
 
-            // Find employees in this folder
-            const empsInFolder = employees.filter(e => e.workshopId === selectedWorkshopId && e.department === editingFolder.originalName);
-            for (const emp of empsInFolder) {
-                await updateEmployee({ ...emp, department: editingFolder.name });
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || '重命名失败');
             }
 
-            await deleteWorkshopFolder(selectedWorkshopId, editingFolder.originalName);
+            // 刷新数据
+            window.location.reload();
 
             if (selectedFolder === editingFolder.originalName) setSelectedFolder(editingFolder.name);
             setEditingFolder(null);
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert("重命名失败，请重试");
+            alert(error.message || "重命名失败，请重试");
         }
     };
 
@@ -531,8 +539,8 @@ export const Employees: React.FC = () => {
                             <button
                                 onClick={() => setSortOrder('date')}
                                 className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${sortOrder === 'date'
-                                        ? 'bg-white text-blue-600 shadow-sm'
-                                        : 'text-slate-500 hover:text-slate-700'
+                                    ? 'bg-white text-blue-600 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700'
                                     }`}
                             >
                                 <Calendar size={14} />
@@ -541,8 +549,8 @@ export const Employees: React.FC = () => {
                             <button
                                 onClick={() => setSortOrder('name')}
                                 className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${sortOrder === 'name'
-                                        ? 'bg-white text-blue-600 shadow-sm'
-                                        : 'text-slate-500 hover:text-slate-700'
+                                    ? 'bg-white text-blue-600 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700'
                                     }`}
                             >
                                 <User size={14} />
@@ -573,8 +581,8 @@ export const Employees: React.FC = () => {
                             <button
                                 onClick={() => setIsSelectionMode(!isSelectionMode)}
                                 className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shrink-0 ${isSelectionMode
-                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700'
-                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700'
+                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
                                     }`}
                             >
                                 <CheckSquare size={16} />

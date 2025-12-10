@@ -258,6 +258,79 @@ app.put('/api/workshops/:id', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/workshops/:id/rename-folder
+ * 原子操作重命名文件夹（使用数据库事务）
+ * 安全改进：确保文件夹重命名和员工更新在同一事务中完成
+ */
+app.post('/api/workshops/:id/rename-folder', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { oldName, newName } = req.body;
+    const workshopId = req.params.id;
+
+    // 输入验证
+    if (!oldName || !newName || typeof oldName !== 'string' || typeof newName !== 'string') {
+      return res.status(400).json({ error: '文件夹名称不能为空' });
+    }
+
+    if (newName.length > 50 || oldName.length > 50) {
+      return res.status(400).json({ error: '文件夹名称不能超过50字符' });
+    }
+
+    // 开始事务
+    await client.query('BEGIN');
+
+    // 1. 获取当前工段信息
+    const { rows: workshopRows } = await client.query(
+      'SELECT departments FROM workshops WHERE id = $1 FOR UPDATE',
+      [workshopId]
+    );
+
+    if (!workshopRows[0]) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: '工段不存在' });
+    }
+
+    let departments = workshopRows[0].departments || [];
+
+    // 检查旧文件夹是否存在
+    if (!departments.includes(oldName)) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: '原文件夹不存在' });
+    }
+
+    // 检查新文件夹名是否已被使用
+    if (departments.includes(newName)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: '新文件夹名称已存在' });
+    }
+
+    // 2. 更新工段的 departments（替换旧名称为新名称）
+    departments = departments.map(d => d === oldName ? newName : d);
+    await client.query(
+      'UPDATE workshops SET departments = $1::jsonb WHERE id = $2',
+      [JSON.stringify(departments), workshopId]
+    );
+
+    // 3. 批量更新员工的部门字段
+    await client.query(
+      'UPDATE employees SET department = $1 WHERE workshop_id = $2 AND department = $3',
+      [newName, workshopId, oldName]
+    );
+
+    // 提交事务
+    await client.query('COMMIT');
+
+    res.json({ success: true, message: '文件夹重命名成功', newDepartments: departments });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+});
+
 // ========================================
 // 系统设置 API
 // ========================================
@@ -782,19 +855,63 @@ app.get('/api/weaving/products', async (req, res) => {
 
 /**
  * POST /api/weaving/products
- * 创建新网种/产品
+ * 创建新网种/产品（带严格验证，防止文件导入注入）
  */
 app.post('/api/weaving/products', async (req, res) => {
   try {
     const { id, name, weftDensity, description, isActive } = req.body;
+
+    // 输入验证 - 防止恶意数据注入
+    const errors = [];
+
+    // 验证必填字段
+    if (!id || typeof id !== 'string') {
+      errors.push('产品ID必须是非空字符串');
+    } else if (id.length > 50 || !/^[a-zA-Z0-9_-]+$/.test(id)) {
+      errors.push('产品ID只能包含字母、数字、下划线和连字符，最多50字符');
+    }
+
+    if (!name || typeof name !== 'string') {
+      errors.push('产品名称必须是非空字符串');
+    } else if (name.length > 100) {
+      errors.push('产品名称不能超过100字符');
+    }
+
+    // 验证纬密（应该是数字）
+    if (weftDensity !== undefined && weftDensity !== null) {
+      const density = parseFloat(weftDensity);
+      if (isNaN(density) || density < 0 || density > 100) {
+        errors.push('纬密必须是0-100之间的数字');
+      }
+    }
+
+    // 验证描述（可选）
+    if (description && (typeof description !== 'string' || description.length > 500)) {
+      errors.push('描述不能超过500字符');
+    }
+
+    if (errors.length > 0) {
+      return res.status(400).json({ error: '输入验证失败', details: errors });
+    }
+
+    // 清理输入
+    const cleanId = id.trim().substring(0, 50);
+    const cleanName = name.trim().substring(0, 100);
+    const cleanDensity = weftDensity ? parseFloat(weftDensity) : 13;
+    const cleanDescription = description ? description.trim().substring(0, 500) : '';
+
     const { rows } = await pool.query(
       `INSERT INTO weaving_products (id, name, weft_density, description, is_active)
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [id, name, weftDensity, description, isActive !== false]
+      [cleanId, cleanName, cleanDensity, cleanDescription, isActive !== false]
     );
     res.status(201).json(rows[0]);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    if (error.code === '23505') { // Unique constraint violation
+      res.status(409).json({ error: '产品ID已存在' });
+    } else {
+      res.status(500).json({ error: error.message });
+    }
   }
 });
 
