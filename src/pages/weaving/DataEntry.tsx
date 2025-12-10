@@ -13,7 +13,7 @@
 import React, { useState, useMemo } from 'react';
 import {
     Database, Calculator, Factory, Save, RefreshCw,
-    ChevronDown, ChevronUp, AlertCircle, CheckCircle2
+    ChevronDown, ChevronUp, AlertCircle, CheckCircle2, Loader2
 } from 'lucide-react';
 import { WeavingMonthlyData, DEFAULT_MACHINES, DEFAULT_WEAVING_CONFIG } from '../../weavingTypes';
 import {
@@ -23,6 +23,8 @@ import {
     calculateWidthCoefficient,
     getSpeedCoefficient
 } from '../../services/weavingCalcService';
+
+const API_BASE = '/api/weaving';
 
 // 机台产量输入组件
 interface MachineInputProps {
@@ -51,8 +53,8 @@ const MachineInput: React.FC<MachineInputProps> = ({
             >
                 <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold ${data.actualOutput > 0
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-slate-100 text-slate-600'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-slate-100 text-slate-600'
                         }`}>
                         {machine.id}
                     </div>
@@ -166,6 +168,12 @@ const MachineInput: React.FC<MachineInputProps> = ({
 };
 
 export const DataEntry = () => {
+    // 年月选择
+    const now = new Date();
+    const [year, setYear] = useState(now.getFullYear());
+    const [month, setMonth] = useState(now.getMonth() + 1);
+    const [saving, setSaving] = useState(false);
+
     // 基础月度数据
     const [monthlyData, setMonthlyData] = useState<WeavingMonthlyData>({
         netFormationRate: 75,
@@ -219,6 +227,52 @@ export const DataEntry = () => {
     // 同步等效产量到月度数据
     const syncEquivalentOutput = () => {
         setMonthlyData(prev => ({ ...prev, equivalentOutput: totalEquivalent }));
+    };
+
+    // 保存数据到后端
+    const handleSaveData = async () => {
+        if (saving) return;
+
+        setSaving(true);
+        try {
+            // 保存月度汇总数据
+            const monthlyResponse = await fetch(`${API_BASE}/monthly-data`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    year,
+                    month,
+                    ...monthlyData,
+                    equivalentOutput: monthlyData.equivalentOutput || totalEquivalent
+                })
+            });
+
+            if (!monthlyResponse.ok) {
+                throw new Error('保存月度数据失败');
+            }
+
+            // 保存机台产量记录
+            const machineRecordsResponse = await fetch(`${API_BASE}/machine-records`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    year,
+                    month,
+                    records: machineData.filter(m => m.actualOutput > 0)
+                })
+            });
+
+            if (!machineRecordsResponse.ok) {
+                throw new Error('保存机台记录失败');
+            }
+
+            alert(`${year}年${month}月数据保存成功！`);
+        } catch (err) {
+            console.error('保存数据失败:', err);
+            alert('保存数据失败，请重试');
+        } finally {
+            setSaving(false);
+        }
     };
 
     // 统计已录入机台数
@@ -445,9 +499,22 @@ export const DataEntry = () => {
                                 <CheckCircle2 size={18} />
                                 数据预览
                             </h3>
-                            <button className="btn-primary flex items-center gap-2">
-                                <Save size={16} />
-                                保存数据
+                            <button
+                                onClick={handleSaveData}
+                                disabled={saving}
+                                className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {saving ? (
+                                    <>
+                                        <Loader2 size={16} className="animate-spin" />
+                                        保存中...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save size={16} />
+                                        保存数据
+                                    </>
+                                )}
                             </button>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-sm">

@@ -444,10 +444,26 @@ export const BonusCalculation: React.FC = () => {
     loadData(true);
   };
 
-  const handleUpdateConfig = (newConfig: WeavingConfig) => {
-    setConfig(newConfig);
-    setIsConfigModalOpen(false);
-    // In real app, save to backend here
+  const handleUpdateConfig = async (newConfig: WeavingConfig) => {
+    try {
+      // 保存配置到后端
+      const response = await fetch(`${API_BASE}/config`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newConfig)
+      });
+
+      if (!response.ok) {
+        throw new Error('保存配置失败');
+      }
+
+      setConfig(newConfig);
+      setIsConfigModalOpen(false);
+      alert('配置已保存');
+    } catch (err) {
+      console.error('保存配置失败:', err);
+      alert('保存配置失败，请重试');
+    }
   };
 
   if (loading || !config) {
