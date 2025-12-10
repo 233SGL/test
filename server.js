@@ -146,6 +146,187 @@ const requireAdminAuth = async (req, res, next) => {
   }
 };
 
+/**
+ * 基础认证中间件
+ * 仅验证用户已登录（x-user-id 对应的用户存在）
+ */
+const requireAuth = async (req, res, next) => {
+  try {
+    const userId = req.headers['x-user-id'];
+
+    if (!userId) {
+      return res.status(401).json({ error: '未授权：缺少用户标识' });
+    }
+
+    // 查询用户是否存在
+    const { rows } = await pool.query(
+      'SELECT id, permissions FROM system_users WHERE id = $1',
+      [userId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(401).json({ error: '未授权：用户不存在' });
+    }
+
+    // 将用户信息附加到请求对象
+    req.user = {
+      id: rows[0].id,
+      permissions: rows[0].permissions || []
+    };
+
+    next();
+  } catch (error) {
+    res.status(500).json({ error: '认证验证失败' });
+  }
+};
+
+/**
+ * 权限验证中间件工厂
+ * 验证用户是否有指定权限
+ * @param {string} permission - 所需权限名称
+ */
+const requirePermission = (permission) => {
+  return async (req, res, next) => {
+    try {
+      const userId = req.headers['x-user-id'];
+
+      if (!userId) {
+        return res.status(401).json({ error: '未授权：缺少用户标识' });
+      }
+
+      // 查询用户权限
+      const { rows } = await pool.query(
+        'SELECT id, permissions FROM system_users WHERE id = $1',
+        [userId]
+      );
+
+      if (rows.length === 0) {
+        return res.status(401).json({ error: '未授权：用户不存在' });
+      }
+
+      const permissions = rows[0].permissions || [];
+
+      // 检查是否有所需权限
+      if (!permissions.includes(permission)) {
+        return res.status(403).json({ error: `权限不足：需要 ${permission} 权限` });
+      }
+
+      // 将用户信息附加到请求对象
+      req.user = {
+        id: rows[0].id,
+        permissions
+      };
+
+      next();
+    } catch (error) {
+      res.status(500).json({ error: '权限验证失败' });
+    }
+  };
+};
+
+// ========================================
+// 登录速率限制（防暴力破解）
+// ========================================
+
+/**
+ * 登录尝试记录存储
+ * 格式: IP -> { count: number, lockedUntil: number }
+ */
+const loginAttempts = new Map();
+
+/** 最大登录尝试次数 */
+const MAX_LOGIN_ATTEMPTS = 5;
+/** 锁定时间（毫秒）- 15分钟 */
+const LOCKOUT_DURATION = 15 * 60 * 1000;
+/** 尝试记录过期时间（毫秒）- 30分钟 */
+const ATTEMPT_EXPIRY = 30 * 60 * 1000;
+
+/**
+ * 获取客户端 IP 地址
+ */
+function getClientIP(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
+}
+
+/**
+ * 检查登录是否被限制
+ * @returns {object} { isLocked, remainingMinutes }
+ */
+function checkLoginRateLimit(ip) {
+  const attempt = loginAttempts.get(ip);
+
+  if (!attempt) {
+    return { isLocked: false };
+  }
+
+  const now = Date.now();
+
+  // 检查是否在锁定期内
+  if (attempt.lockedUntil && now < attempt.lockedUntil) {
+    const remainingMs = attempt.lockedUntil - now;
+    const remainingMinutes = Math.ceil(remainingMs / 60000);
+    return { isLocked: true, remainingMinutes };
+  }
+
+  // 如果锁定已过期，清除记录
+  if (attempt.lockedUntil && now >= attempt.lockedUntil) {
+    loginAttempts.delete(ip);
+    return { isLocked: false };
+  }
+
+  return { isLocked: false };
+}
+
+/**
+ * 记录登录失败
+ * @returns {boolean} 是否应该锁定
+ */
+function recordLoginFailure(ip) {
+  const now = Date.now();
+  let attempt = loginAttempts.get(ip);
+
+  if (!attempt) {
+    attempt = { count: 1, lastAttempt: now };
+  } else {
+    // 如果上次尝试超过过期时间，重置计数
+    if (now - attempt.lastAttempt > ATTEMPT_EXPIRY) {
+      attempt = { count: 1, lastAttempt: now };
+    } else {
+      attempt.count++;
+      attempt.lastAttempt = now;
+    }
+  }
+
+  // 达到最大尝试次数，设置锁定
+  if (attempt.count >= MAX_LOGIN_ATTEMPTS) {
+    attempt.lockedUntil = now + LOCKOUT_DURATION;
+    loginAttempts.set(ip, attempt);
+    console.log(`[SECURITY] IP ${ip} 已被锁定 ${LOCKOUT_DURATION / 60000} 分钟`);
+    return true;
+  }
+
+  loginAttempts.set(ip, attempt);
+  return false;
+}
+
+/**
+ * 清除登录失败记录（登录成功时调用）
+ */
+function clearLoginAttempts(ip) {
+  loginAttempts.delete(ip);
+}
+
+// 定期清理过期的登录记录（每5分钟）
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, attempt] of loginAttempts.entries()) {
+    if (now - attempt.lastAttempt > ATTEMPT_EXPIRY) {
+      loginAttempts.delete(ip);
+    }
+  }
+}, 5 * 60 * 1000);
+
+
 // ========================================
 // 健康检查 API
 // ========================================
@@ -205,7 +386,7 @@ app.get('/api/employees', async (req, res) => {
  * 创建新员工
  * @body {id, name, gender, workshopId, department, position, joinDate, standardBaseScore, status, phone, expectedDailyHours, baseSalary, coefficient}
  */
-app.post('/api/employees', async (req, res) => {
+app.post('/api/employees', requirePermission('MANAGE_EMPLOYEES'), async (req, res) => {
   try {
     const { rows } = await pool.query(
       'INSERT INTO employees (id, name, gender, workshop_id, department, position, join_date, standard_base_score, status, phone, expected_daily_hours, base_salary, coefficient) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *',
@@ -223,7 +404,7 @@ app.post('/api/employees', async (req, res) => {
   }
 });
 
-app.put('/api/employees/:id', async (req, res) => {
+app.put('/api/employees/:id', requirePermission('MANAGE_EMPLOYEES'), async (req, res) => {
   try {
     const { rows } = await pool.query(
       'UPDATE employees SET name=$2, gender=$3, workshop_id=$4, department=$5, position=$6, join_date=$7, standard_base_score=$8, status=$9, phone=$10, expected_daily_hours=$11, base_salary=$12, coefficient=$13 WHERE id=$1 RETURNING *',
@@ -241,7 +422,7 @@ app.put('/api/employees/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/employees/:id', async (req, res) => {
+app.delete('/api/employees/:id', requirePermission('MANAGE_EMPLOYEES'), async (req, res) => {
   try {
     // 先查询员工信息用于日志
     const { rows: empRows } = await pool.query('SELECT name FROM employees WHERE id = $1', [req.params.id]);
@@ -281,7 +462,7 @@ app.get('/api/workshops', async (req, res) => {
  * PUT /api/workshops/:id
  * 更新或创建工段（支持更新部门/文件夹）
  */
-app.put('/api/workshops/:id', async (req, res) => {
+app.put('/api/workshops/:id', requirePermission('MANAGE_EMPLOYEES'), async (req, res) => {
   try {
     const { name, code, departments } = req.body;
 
@@ -309,7 +490,7 @@ app.put('/api/workshops/:id', async (req, res) => {
  * 原子操作重命名文件夹（使用数据库事务）
  * 安全改进：确保文件夹重命名和员工更新在同一事务中完成
  */
-app.post('/api/workshops/:id/rename-folder', async (req, res) => {
+app.post('/api/workshops/:id/rename-folder', requirePermission('MANAGE_EMPLOYEES'), async (req, res) => {
   const client = await pool.connect();
   try {
     const { oldName, newName } = req.body;
@@ -413,10 +594,22 @@ app.put('/api/settings', async (req, res) => {
 /**
  * POST /api/auth/login
  * 服务端 PIN 验证（安全改进：PIN 不应在前端比较）
+ * 已添加速率限制防止暴力破解
  */
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { userId, pin } = req.body;
+    const clientIP = getClientIP(req);
+
+    // 检查是否被锁定
+    const rateLimit = checkLoginRateLimit(clientIP);
+    if (rateLimit.isLocked) {
+      console.log(`[SECURITY] 登录被拒绝 - IP ${clientIP} 已被锁定`);
+      return res.status(429).json({
+        success: false,
+        error: `登录尝试次数过多，请 ${rateLimit.remainingMinutes} 分钟后再试`
+      });
+    }
 
     if (!userId || !pin) {
       return res.status(400).json({ success: false, error: '缺少必要参数' });
@@ -429,6 +622,7 @@ app.post('/api/auth/login', async (req, res) => {
     );
 
     if (rows.length === 0) {
+      recordLoginFailure(clientIP);
       return res.status(401).json({ success: false, error: '用户不存在' });
     }
 
@@ -438,10 +632,20 @@ app.post('/api/auth/login', async (req, res) => {
     if (user.pin_code !== pin) {
       // 记录登录失败
       await logLogin(userId, user.display_name || user.username, 'LOGIN_FAILED', req);
+      const shouldLock = recordLoginFailure(clientIP);
+      if (shouldLock) {
+        return res.status(429).json({
+          success: false,
+          error: `登录尝试次数过多，请 15 分钟后再试`
+        });
+      }
       return res.status(401).json({ success: false, error: 'PIN 码错误' });
     }
 
-    // 验证成功，记录登录
+    // 验证成功，清除失败记录
+    clearLoginAttempts(clientIP);
+
+    // 记录登录成功
     await logLogin(userId, user.display_name || user.username, 'LOGIN', req);
 
     // 返回用户信息（不包含 PIN 码）
@@ -479,7 +683,7 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-app.post('/api/users', async (req, res) => {
+app.post('/api/users', requirePermission('MANAGE_SYSTEM'), async (req, res) => {
   try {
     const {
       id,
@@ -522,7 +726,7 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
-app.put('/api/users/:id', async (req, res) => {
+app.put('/api/users/:id', requirePermission('MANAGE_SYSTEM'), async (req, res) => {
   try {
     const {
       username,
@@ -572,7 +776,7 @@ app.put('/api/users/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/users/:id', async (req, res) => {
+app.delete('/api/users/:id', requirePermission('MANAGE_SYSTEM'), async (req, res) => {
   try {
     // 先查询用户信息用于日志
     const { rows: userRows } = await pool.query('SELECT display_name FROM system_users WHERE id = $1', [req.params.id]);
@@ -1583,10 +1787,21 @@ app.post('/api/admin/verify', async (req, res) => {
  * POST /api/admin/verify-pin
  * 验证管理员 PIN 码（用于危险操作的二次确认）
  * 使用 admin 账户的 PIN 码作为主密码
+ * 已添加速率限制防止暴力破解
  */
 app.post('/api/admin/verify-pin', async (req, res) => {
   try {
     const { pin } = req.body;
+    const clientIP = getClientIP(req);
+
+    // 检查是否被锁定（与登录使用相同的速率限制）
+    const rateLimit = checkLoginRateLimit(clientIP);
+    if (rateLimit.isLocked) {
+      console.log(`[SECURITY] PIN 验证被拒绝 - IP ${clientIP} 已被锁定`);
+      return res.status(429).json({
+        error: `尝试次数过多，请 ${rateLimit.remainingMinutes} 分钟后再试`
+      });
+    }
 
     if (!pin) {
       return res.status(400).json({ error: '缺少 PIN 码' });
@@ -1605,10 +1820,17 @@ app.post('/api/admin/verify-pin', async (req, res) => {
 
     // 验证输入的 PIN 是否与管理员 PIN 一致
     if (adminPinCode !== pin) {
+      const shouldLock = recordLoginFailure(clientIP);
+      if (shouldLock) {
+        return res.status(429).json({
+          error: `尝试次数过多，请 15 分钟后再试`
+        });
+      }
       return res.status(401).json({ error: 'PIN 码错误' });
     }
 
-    // 验证成功
+    // 验证成功，清除失败记录
+    clearLoginAttempts(clientIP);
     res.json({ verified: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -1962,7 +2184,7 @@ app.get('/api/admin/backups', async (req, res) => {
  * POST /api/admin/backups
  * 创建新备份
  */
-app.post('/api/admin/backups', async (req, res) => {
+app.post('/api/admin/backups', requireAdminAuth, async (req, res) => {
   try {
     const filename = await performBackup(false);
 
@@ -1983,7 +2205,7 @@ app.post('/api/admin/backups', async (req, res) => {
  * DELETE /api/admin/backups/:filename
  * 删除备份文件
  */
-app.delete('/api/admin/backups/:filename', async (req, res) => {
+app.delete('/api/admin/backups/:filename', requireAdminAuth, async (req, res) => {
   try {
     const { filename } = req.params;
     if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
@@ -2009,7 +2231,7 @@ app.delete('/api/admin/backups/:filename', async (req, res) => {
  * POST /api/admin/restore/:filename
  * 恢复数据
  */
-app.post('/api/admin/restore/:filename', async (req, res) => {
+app.post('/api/admin/restore/:filename', requireAdminAuth, async (req, res) => {
   try {
     const { filename } = req.params;
 
