@@ -208,8 +208,8 @@ export const Login: React.FC = () => {
 
                             <form onSubmit={handleLogin} className="space-y-5">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                        请输入 PIN 码 <span className="text-slate-400 font-normal">(默认: 1234)</span>
+                                    <label htmlFor="pin-input" className="block text-sm font-medium text-slate-700 mb-2">
+                                        请输入 PIN 码
                                     </label>
                                     <div className="relative">
                                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -257,8 +257,8 @@ export const Login: React.FC = () => {
                         <span>System v2.5</span>
                     </div>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 
