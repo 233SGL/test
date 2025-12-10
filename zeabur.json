@@ -1,12 +1,4 @@
 {
     "$schema": "https://schema.zeabur.app/zeabur.json",
-    "build": {
-        "commands": [
-            "npm install",
-            "npm run build"
-        ]
-    },
-    "start": {
-        "command": "NODE_ENV=production node server.js"
-    }
+    "runtime": "dockerfile"
 }

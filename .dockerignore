@@ -1,0 +1,30 @@
+# Dependencies
+node_modules
+npm-debug.log
+
+# Build artifacts (will be built in Docker)
+dist
+
+# Environment files (will be copied explicitly)
+.env
+.env.local
+.env.production
+
+# Development files
+*.md
+docs
+.git
+.gitignore
+.vscode
+.idea
+
+# Test files
+*.test.*
+*.spec.*
+__tests__
+coverage
+
+# Misc
+*.log
+.DS_Store
+Thumbs.db
