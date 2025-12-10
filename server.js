@@ -1629,7 +1629,7 @@ async function logLogin(userId, username, action, req) {
  */
 app.get('/api/admin/audit-logs', async (req, res) => {
   try {
-    const { page = 1, limit = 50, action, targetType, userId, startDate, endDate } = req.query;
+    const { page = 1, limit = 50, action, targetType, userId, startDate, endDate, search, dateFrom, dateTo } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
     let whereClause = '';
@@ -1648,13 +1648,22 @@ app.get('/api/admin/audit-logs', async (req, res) => {
       whereClause += ` AND user_id = $${paramIndex++}`;
       params.push(userId);
     }
-    if (startDate) {
-      whereClause += ` AND created_at >= $${paramIndex++}`;
-      params.push(startDate);
+    // 支持 search 参数 - 搜索用户名和目标名称
+    if (search) {
+      whereClause += ` AND (username ILIKE $${paramIndex} OR target_name ILIKE $${paramIndex++})`;
+      params.push(`%${search}%`);
     }
-    if (endDate) {
-      whereClause += ` AND created_at <= $${paramIndex++}`;
-      params.push(endDate);
+    // 支持 dateFrom 和 dateTo (兼容旧的 startDate/endDate)
+    const fromDate = dateFrom || startDate;
+    const toDate = dateTo || endDate;
+    if (fromDate) {
+      whereClause += ` AND created_at >= $${paramIndex++}`;
+      params.push(fromDate);
+    }
+    if (toDate) {
+      // 结束日期加一天以包含当天
+      whereClause += ` AND created_at < ($${paramIndex++}::date + interval '1 day')`;
+      params.push(toDate);
     }
 
     const countQuery = `SELECT COUNT(*) FROM audit_logs WHERE 1=1 ${whereClause}`;
@@ -1675,6 +1684,7 @@ app.get('/api/admin/audit-logs', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 /**
  * GET /api/admin/login-history

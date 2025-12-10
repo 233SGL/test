@@ -3,7 +3,7 @@
  * 查看系统所有操作记录
  */
 import React, { useState, useEffect } from 'react';
-import { FileText, Search, Filter, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, Search, Filter, RefreshCw, ChevronLeft, ChevronRight, Calendar, X } from 'lucide-react';
 
 const API_BASE = '/api/admin';
 
@@ -27,6 +27,9 @@ export const AuditLogs: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [actionFilter, setActionFilter] = useState('');
     const [typeFilter, setTypeFilter] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
 
     const limit = 20;
 
@@ -36,6 +39,9 @@ export const AuditLogs: React.FC = () => {
             const params = new URLSearchParams({ page: String(page), limit: String(limit) });
             if (actionFilter) params.append('action', actionFilter);
             if (typeFilter) params.append('targetType', typeFilter);
+            if (searchQuery) params.append('search', searchQuery);
+            if (dateFrom) params.append('dateFrom', dateFrom);
+            if (dateTo) params.append('dateTo', dateTo);
 
             const res = await fetch(`${API_BASE}/audit-logs?${params}`);
             if (res.ok) {
@@ -52,7 +58,19 @@ export const AuditLogs: React.FC = () => {
 
     useEffect(() => {
         fetchLogs();
-    }, [page, actionFilter, typeFilter]);
+    }, [page, actionFilter, typeFilter, searchQuery, dateFrom, dateTo]);
+
+    // 防抖搜索
+    const [searchInput, setSearchInput] = useState('');
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (searchInput !== searchQuery) {
+                setSearchQuery(searchInput);
+                setPage(1);
+            }
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchInput]);
 
     const formatTime = (dateStr: string) => {
         return new Date(dateStr).toLocaleString('zh-CN');
@@ -72,9 +90,39 @@ export const AuditLogs: React.FC = () => {
         'UPDATE': { label: '更新', color: 'bg-blue-100 text-blue-700' },
         'DELETE': { label: '删除', color: 'bg-red-100 text-red-700' },
         'LOGIN': { label: '登录', color: 'bg-purple-100 text-purple-700' },
-        'LOGOUT': { label: '登出', color: 'bg-slate-100 text-slate-700' }
+        'LOGIN_FAILED': { label: '登录失败', color: 'bg-orange-100 text-orange-700' },
+        'LOGOUT': { label: '登出', color: 'bg-slate-100 text-slate-700' },
+        'BACKUP': { label: '备份', color: 'bg-cyan-100 text-cyan-700' },
+        'RESTORE': { label: '恢复', color: 'bg-amber-100 text-amber-700' },
+        'ADMIN_ACCESS': { label: '管理访问', color: 'bg-indigo-100 text-indigo-700' },
+        'ADMIN_VERIFY_FAILED': { label: '验证失败', color: 'bg-rose-100 text-rose-700' }
     };
 
+    const typeLabels: Record<string, string> = {
+        'employee': '员工',
+        'workshop': '工段',
+        'user': '用户',
+        'settings': '设置',
+        'backup': '备份',
+        'system': '系统',
+        'admin': '管理',
+        'weaving_employee': '织造员工',
+        'weaving_machine': '织造机台',
+        'weaving_product': '织造产品',
+        'weaving_record': '生产记录'
+    };
+
+    const clearFilters = () => {
+        setActionFilter('');
+        setTypeFilter('');
+        setSearchInput('');
+        setSearchQuery('');
+        setDateFrom('');
+        setDateTo('');
+        setPage(1);
+    };
+
+    const hasActiveFilters = actionFilter || typeFilter || searchQuery || dateFrom || dateTo;
     const totalPages = Math.ceil(total / limit);
 
     return (
@@ -90,23 +138,60 @@ export const AuditLogs: React.FC = () => {
             </div>
 
             {/* 筛选器 */}
-            <div className="card p-4 flex flex-wrap gap-4">
-                <div className="flex items-center gap-2">
-                    <Filter size={18} className="text-slate-400" />
-                    <select
-                        className="input py-2"
-                        value={actionFilter}
-                        onChange={e => { setActionFilter(e.target.value); setPage(1); }}
-                    >
-                        <option value="">所有操作</option>
-                        <option value="CREATE">创建</option>
-                        <option value="UPDATE">更新</option>
-                        <option value="DELETE">删除</option>
-                        <option value="LOGIN">登录</option>
-                        <option value="LOGOUT">登出</option>
-                    </select>
+            <div className="card p-4 space-y-3">
+                {/* 第一行：搜索和日期 */}
+                <div className="flex flex-wrap gap-3">
+                    <div className="relative flex-1 min-w-[200px]">
+                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="搜索用户名、目标名称..."
+                            className="input pl-9 py-2 w-full"
+                            value={searchInput}
+                            onChange={e => setSearchInput(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Calendar size={16} className="text-slate-400" />
+                        <input
+                            type="date"
+                            className="input py-2"
+                            value={dateFrom}
+                            onChange={e => { setDateFrom(e.target.value); setPage(1); }}
+                            placeholder="开始日期"
+                        />
+                        <span className="text-slate-400">至</span>
+                        <input
+                            type="date"
+                            className="input py-2"
+                            value={dateTo}
+                            onChange={e => { setDateTo(e.target.value); setPage(1); }}
+                            placeholder="结束日期"
+                        />
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
+
+                {/* 第二行：下拉筛选和统计 */}
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2">
+                        <Filter size={16} className="text-slate-400" />
+                        <select
+                            className="input py-2"
+                            value={actionFilter}
+                            onChange={e => { setActionFilter(e.target.value); setPage(1); }}
+                        >
+                            <option value="">所有操作</option>
+                            <option value="CREATE">创建</option>
+                            <option value="UPDATE">更新</option>
+                            <option value="DELETE">删除</option>
+                            <option value="LOGIN">登录</option>
+                            <option value="LOGIN_FAILED">登录失败</option>
+                            <option value="LOGOUT">登出</option>
+                            <option value="BACKUP">备份</option>
+                            <option value="RESTORE">恢复</option>
+                            <option value="ADMIN_ACCESS">管理访问</option>
+                        </select>
+                    </div>
                     <select
                         className="input py-2"
                         value={typeFilter}
@@ -117,12 +202,29 @@ export const AuditLogs: React.FC = () => {
                         <option value="workshop">工段</option>
                         <option value="user">用户</option>
                         <option value="settings">设置</option>
+                        <option value="backup">备份</option>
+                        <option value="system">系统</option>
+                        <option value="weaving_employee">织造员工</option>
+                        <option value="weaving_machine">织造机台</option>
+                        <option value="weaving_product">织造产品</option>
+                        <option value="weaving_record">生产记录</option>
                     </select>
-                </div>
-                <div className="ml-auto text-sm text-slate-500">
-                    共 {total} 条记录
+
+                    {hasActiveFilters && (
+                        <button
+                            onClick={clearFilters}
+                            className="flex items-center gap-1 px-3 py-2 text-sm text-slate-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                        >
+                            <X size={14} /> 清除筛选
+                        </button>
+                    )}
+
+                    <div className="ml-auto text-sm text-slate-500">
+                        共 <span className="font-semibold text-slate-700">{total}</span> 条记录
+                    </div>
                 </div>
             </div>
+
 
             {/* 日志表格 */}
             <div className="card overflow-hidden">
