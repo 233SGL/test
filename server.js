@@ -159,6 +159,9 @@ app.get('/api/health', async (req, res) => {
     const { rows } = await pool.query('SELECT 1 as ok');
     res.json({ connected: true, ok: rows[0].ok === 1 });
   } catch (error) {
+    // 详细记录错误以便调试
+    console.error('[HEALTH] 数据库连接失败:', error.message);
+    console.error('[HEALTH] 错误详情:', error.code, error.stack?.split('\n')[0]);
     res.status(500).json({ connected: false, error: error.message });
   }
 });
