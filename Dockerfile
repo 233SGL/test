@@ -45,6 +45,7 @@ COPY --from=builder /app/dist ./dist
 # 设置环境变量
 ENV NODE_ENV=production
 ENV PORT=8080
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 
 # 暴露端口
 EXPOSE 8080
