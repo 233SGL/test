@@ -2245,6 +2245,40 @@ app.delete('/api/admin/backups/:filename', requireAdminAuth, async (req, res) =>
 });
 
 /**
+ * GET /api/admin/backups/:filename
+ * 下载备份文件
+ */
+app.get('/api/admin/backups/:filename', requireAdminAuth, async (req, res) => {
+  try {
+    const { filename } = req.params;
+
+    // 安全检查：防止路径遍历攻击
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return res.status(400).json({ error: '无效的文件名' });
+    }
+
+    const filepath = path.join(BACKUP_DIR, filename);
+
+    // 检查文件是否存在
+    try {
+      await fs.access(filepath);
+    } catch {
+      return res.status(404).json({ error: '备份文件不存在' });
+    }
+
+    // 设置下载响应头
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    // 读取并发送文件
+    const content = await fs.readFile(filepath, 'utf-8');
+    res.send(content);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * POST /api/admin/restore/:filename
  * 恢复数据
  */

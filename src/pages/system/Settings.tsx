@@ -168,6 +168,39 @@ export const Settings: React.FC = () => {
         }
     };
 
+    const handleDownloadBackup = async (filename: string) => {
+        try {
+            const userId = localStorage.getItem('userId') || '';
+            const userName = localStorage.getItem('userName') || '';
+
+            const response = await fetch(`${API_BASE}/admin/backups/${filename}`, {
+                headers: {
+                    'x-user-id': userId,
+                    'x-user-name': encodeURIComponent(userName)
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('下载失败');
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            showStatus('success', `备份文件 "${filename}" 下载成功`);
+        } catch (e) {
+            showStatus('error', '下载失败，请重试');
+        }
+    };
+
+
     const handleSaveUser = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!userForm.username || !userForm.displayName || !userForm.pinCode) return;
@@ -564,6 +597,14 @@ export const Settings: React.FC = () => {
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-3 flex justify-end gap-2">
+                                                    <button
+                                                        onClick={() => handleDownloadBackup(backup.filename)}
+                                                        disabled={isProcessing}
+                                                        className="text-blue-600 hover:text-blue-700 p-1.5 hover:bg-blue-50 rounded disabled:opacity-30"
+                                                        title="导出下载"
+                                                    >
+                                                        <FileDown size={16} />
+                                                    </button>
                                                     <button
                                                         onClick={() => handleRestoreBackup(backup.filename)}
                                                         disabled={isProcessing}
