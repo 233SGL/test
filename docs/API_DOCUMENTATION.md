@@ -326,15 +326,69 @@ GET /api/workshops
   {
     "id": "ws_styling",
     "name": "定型工段",
-    "description": "负责产品定型工序"
+    "code": "styling",
+    "departments": ["定型一车间", "定型二车间", "后整理"]
   },
   {
     "id": "ws_weaving",
     "name": "织造工段",
-    "description": "负责织网工序"
+    "code": "weaving",
+    "departments": ["织造一班", "织造二班"]
   }
 ]
 ```
+
+#### 更新工段
+
+```
+PUT /api/workshops/:id
+Content-Type: application/json
+
+{
+  "name": "定型工段",
+  "code": "styling",
+  "departments": ["定型一车间", "定型二车间", "后整理"]
+}
+```
+
+**说明**: 使用 `UPSERT` 模式，如果工段存在则更新，不存在则创建。
+
+#### 重命名文件夹（原子操作）
+
+```
+POST /api/workshops/:id/rename-folder
+Content-Type: application/json
+
+{
+  "oldName": "定型一车间",
+  "newName": "定型一车间（新）"
+}
+```
+
+**请求体字段说明**:
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `oldName` | string | 是 | 原文件夹名称 |
+| `newName` | string | 是 | 新文件夹名称，最长50字符 |
+
+**说明**: 此操作使用数据库事务，会同时更新：
+1. 工段的 `departments` 数组
+2. 该文件夹下所有员工的 `department` 字段
+
+**响应示例**:
+```json
+{
+  "success": true,
+  "message": "文件夹重命名成功",
+  "newDepartments": ["定型一车间（新）", "定型二车间", "后整理"]
+}
+```
+
+**错误响应**:
+- `400` - 文件夹名称不能为空或超过50字符
+- `404` - 工段或原文件夹不存在
+- `409` - 新文件夹名称已存在
 
 ### 系统设置
 
@@ -864,6 +918,254 @@ GET /api/admin/audit-logs
 }
 ```
 
+### 系统统计
+
+#### 获取系统概览统计
+
+```
+GET /api/admin/stats
+```
+
+**响应示例**:
+```json
+{
+  "activeEmployees": 25,
+  "systemUsers": 6,
+  "logsToday": 42,
+  "onlineUsers": 3
+}
+```
+
+**响应字段说明**:
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `activeEmployees` | number | 在职员工数（不含离职）|
+| `systemUsers` | number | 系统用户数 |
+| `logsToday` | number | 今日操作日志数 |
+| `onlineUsers` | number | 5分钟内活跃用户数 |
+
+### 登录历史
+
+#### 获取登录历史
+
+```
+GET /api/admin/login-history
+```
+
+**查询参数**:
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `page` | number | 否 | 页码，默认1 |
+| `limit` | number | 否 | 每页数量，默认50 |
+| `userId` | string | 否 | 按用户ID筛选 |
+
+**响应示例**:
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "user_id": "u1",
+      "username": "admin",
+      "action": "LOGIN",
+      "ip_address": "127.0.0.1",
+      "user_agent": "Mozilla/5.0...",
+      "created_at": "2025-12-11T08:00:00Z"
+    }
+  ],
+  "total": 50
+}
+```
+
+### 在线用户
+
+#### 获取当前在线用户
+
+```
+GET /api/admin/users-online
+```
+
+**响应示例**:
+```json
+[
+  {
+    "user_id": "u1",
+    "username": "admin",
+    "ip_address": "192.168.1.1",
+    "last_activity": "2025-12-11T15:00:00Z",
+    "created_at": "2025-12-11T08:00:00Z"
+  }
+]
+```
+
+**说明**: 5分钟内有活动的用户视为在线。
+
+### 管理员验证
+
+#### 验证管理员身份
+
+```
+POST /api/admin/verify
+Content-Type: application/json
+
+{
+  "userId": "u1",
+  "password": "123456"
+}
+```
+
+**响应**:
+```json
+{
+  "verified": true
+}
+```
+
+**错误响应**:
+- `401` - PIN 码错误
+- `403` - 用户无 MANAGE_SYSTEM 权限
+- `429` - 请求次数过多（5次失败后锁定15分钟）
+
+#### 验证管理员 PIN（危险操作二次确认）
+
+```
+POST /api/admin/verify-pin
+Content-Type: application/json
+
+{
+  "pin": "123456"
+}
+```
+
+使用 admin 账户的 PIN 码进行验证，用于恢复备份等高危操作的二次确认。
+
+**响应**:
+```json
+{
+  "verified": true
+}
+```
+
+**错误响应**:
+- `401` - { "verified": false }
+- `429` - 请求次数过多
+
+### 会话管理
+
+#### 记录登录历史
+
+```
+POST /api/admin/login-record
+Content-Type: application/json
+
+{
+  "userId": "u1",
+  "username": "admin",
+  "action": "LOGIN"
+}
+```
+
+**action 值**:
+
+| 值 | 说明 |
+|------|------|
+| `LOGIN` | 登录成功 |
+| `LOGOUT` | 登出 |
+| `LOGIN_FAILED` | 登录失败 |
+
+#### 删除会话（登出）
+
+```
+DELETE /api/admin/session/:sessionId
+```
+
+**响应**: 
+```json
+{
+  "success": true
+}
+```
+
+### 数据库备份
+
+#### 获取备份列表
+
+```
+GET /api/admin/backups
+```
+
+**响应示例**:
+```json
+[
+  {
+    "filename": "backup-manual-2025-12-11T10-00-00-000Z.json",
+    "size": 102400,
+    "createdAt": "2025-12-11T10:00:00Z"
+  }
+]
+```
+
+#### 创建备份
+
+```
+POST /api/admin/backups
+```
+
+**权限**: 需要 `MANAGE_SYSTEM` 权限
+
+**响应**:
+```json
+{
+  "success": true,
+  "filename": "backup-manual-2025-12-11T10-00-00-000Z.json"
+}
+```
+
+#### 下载备份文件
+
+```
+GET /api/admin/backups/:filename
+```
+
+**权限**: 需要 `MANAGE_SYSTEM` 权限
+
+**响应**: 直接返回 JSON 文件内容，触发浏览器下载。
+
+**响应头**:
+```
+Content-Type: application/json
+Content-Disposition: attachment; filename="backup-xxx.json"
+```
+
+#### 删除备份
+
+```
+DELETE /api/admin/backups/:filename
+```
+
+**权限**: 需要 `MANAGE_SYSTEM` 权限
+
+**响应**: `204 No Content`
+
+#### 恢复备份
+
+```
+POST /api/admin/restore/:filename
+```
+
+**权限**: 需要 `MANAGE_SYSTEM` 权限
+
+**警告**: 此操作会清空当前数据库并恢复到备份状态，不可逆！
+
+**响应**:
+```json
+{
+  "success": true
+}
+```
+
 ### 数据库查看器
 
 #### 获取所有表信息
@@ -927,7 +1229,7 @@ GET /api/admin/database/tables/:tableName/data
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `page` | number | 否 | 页码，默认1 |
-| `limit` | number | 否 | 每页数量，默认20 |
+| `limit` | number | 否 | 每页数量，默认20，最大100 |
 
 **响应示例**:
 ```json
@@ -935,7 +1237,9 @@ GET /api/admin/database/tables/:tableName/data
   "data": [
     { "id": "emp001", "name": "张三", ... }
   ],
-  "total": 25
+  "total": 25,
+  "page": 1,
+  "limit": 20
 }
 ```
 
@@ -1236,6 +1540,25 @@ HTTP 状态码：
 ---
 
 ## 更新日志
+
+### 2025-12-11
+- 新增后台管理 API 文档：
+  - `GET /api/admin/stats` - 系统统计概览
+  - `GET /api/admin/login-history` - 登录历史
+  - `GET /api/admin/users-online` - 在线用户
+  - `POST /api/admin/verify` - 管理员身份验证
+  - `POST /api/admin/verify-pin` - PIN 码二次确认
+  - `POST /api/admin/login-record` - 记录登录历史
+  - `DELETE /api/admin/session/:sessionId` - 删除会话
+- 新增数据库备份 API 文档：
+  - `GET /api/admin/backups` - 获取备份列表
+  - `POST /api/admin/backups` - 创建备份
+  - `GET /api/admin/backups/:filename` - 下载备份文件
+  - `DELETE /api/admin/backups/:filename` - 删除备份
+  - `POST /api/admin/restore/:filename` - 恢复备份
+- 新增工段文件夹重命名 API `POST /api/workshops/:id/rename-folder`
+- 完善工段 API 文档，添加 PUT 工段更新接口
+- 更新分页响应格式，添加 `page` 和 `limit` 字段
 
 ### 2025-12-06
 - 完善 API 文档：添加所有端点详细说明
