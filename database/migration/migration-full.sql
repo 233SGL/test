@@ -356,6 +356,49 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- ========================================
+-- 基础表触发器
+-- ========================================
+
+-- 工段表时间戳触发器
+DROP TRIGGER IF EXISTS update_workshops_timestamp ON workshops;
+CREATE TRIGGER update_workshops_timestamp
+    BEFORE UPDATE ON workshops
+    FOR EACH ROW
+    EXECUTE FUNCTION update_timestamp();
+
+-- 定型员工表时间戳触发器
+DROP TRIGGER IF EXISTS update_employees_timestamp ON employees;
+CREATE TRIGGER update_employees_timestamp
+    BEFORE UPDATE ON employees
+    FOR EACH ROW
+    EXECUTE FUNCTION update_timestamp();
+
+-- 系统用户表时间戳触发器
+DROP TRIGGER IF EXISTS update_system_users_timestamp ON system_users;
+CREATE TRIGGER update_system_users_timestamp
+    BEFORE UPDATE ON system_users
+    FOR EACH ROW
+    EXECUTE FUNCTION update_timestamp();
+
+-- 系统设置表时间戳触发器
+DROP TRIGGER IF EXISTS update_settings_timestamp ON settings;
+CREATE TRIGGER update_settings_timestamp
+    BEFORE UPDATE ON settings
+    FOR EACH ROW
+    EXECUTE FUNCTION update_timestamp();
+
+-- 定型月度数据表时间戳触发器
+DROP TRIGGER IF EXISTS update_monthly_data_timestamp ON monthly_data;
+CREATE TRIGGER update_monthly_data_timestamp
+    BEFORE UPDATE ON monthly_data
+    FOR EACH ROW
+    EXECUTE FUNCTION update_timestamp();
+
+-- ========================================
+-- 织造工段表触发器
+-- ========================================
+
 -- 织造员工时间戳触发器
 DROP TRIGGER IF EXISTS weaving_employees_update_timestamp ON weaving_employees;
 CREATE TRIGGER weaving_employees_update_timestamp
