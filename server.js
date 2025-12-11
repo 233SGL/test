@@ -407,8 +407,21 @@ app.post('/api/employees', requirePermission('MANAGE_EMPLOYEES'), async (req, re
 app.put('/api/employees/:id', requirePermission('MANAGE_EMPLOYEES'), async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'UPDATE employees SET name=$2, gender=$3, workshop_id=$4, department=$5, position=$6, join_date=$7, standard_base_score=$8, status=$9, phone=$10, expected_daily_hours=$11, base_salary=$12, coefficient=$13 WHERE id=$1 RETURNING *',
-      [req.params.id, req.body.name, req.body.gender, req.body.workshopId, req.body.department, req.body.position, req.body.joinDate, req.body.standardBaseScore, req.body.status, req.body.phone, req.body.expectedDailyHours, req.body.baseSalary || 0, req.body.coefficient || 1.0]
+      `UPDATE employees SET 
+        name=$2, gender=$3, workshop_id=$4, department=$5, position=$6, 
+        join_date=$7, standard_base_score=$8, status=$9, phone=$10, 
+        expected_daily_hours=$11, 
+        base_salary = COALESCE($12, base_salary, 0), 
+        coefficient = COALESCE($13, coefficient, 1.0) 
+       WHERE id=$1 RETURNING *`,
+      [
+        req.params.id, req.body.name, req.body.gender, req.body.workshopId,
+        req.body.department, req.body.position, req.body.joinDate,
+        req.body.standardBaseScore, req.body.status, req.body.phone,
+        req.body.expectedDailyHours,
+        req.body.baseSalary ?? null,
+        req.body.coefficient ?? null
+      ]
     );
 
     // 记录审计日志
@@ -898,11 +911,17 @@ app.put('/api/weaving/employees/:id', async (req, res) => {
 
     const { rows } = await pool.query(
       `UPDATE weaving_employees SET
-        name = $2, gender = $3, position = $4, base_salary = $5, coefficient = $6,
+        name = $2, gender = $3, position = $4, 
+        base_salary = COALESCE($5, base_salary, 0), 
+        coefficient = COALESCE($6, coefficient, 1.0),
         join_date = $7, phone = $8, status = $9, notes = $10,
         machine_id = $11, team = $12
        WHERE id = $1 RETURNING *`,
-      [req.params.id, name, gender, position, baseSalary, coefficient, joinDate, phone, status, notes, machineId, team]
+      [
+        req.params.id, name, gender, position,
+        baseSalary ?? null, coefficient ?? null,
+        joinDate, phone, status, notes, machineId, team
+      ]
     );
     if (!rows[0]) return res.status(404).json({ error: '员工不存在' });
     res.json(rows[0]);
